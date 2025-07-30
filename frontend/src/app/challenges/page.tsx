@@ -21,11 +21,30 @@ interface Challenge {
   }>;
 }
 
+interface QueryResult {
+  passed: boolean;
+  result?: Array<Array<string | number>>;
+  column_names?: string[];
+  expected?: Array<Array<string | number>>;
+  expected_column_names?: string[];
+  error?: string;
+  message?: string;
+}
+
+interface ApiError {
+  response?: {
+    status: number;
+    data?: {
+      detail?: string;
+    };
+  };
+}
+
 export default function ChallengesPage() {
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [selectedChallenge, setSelectedChallenge] = useState<Challenge | null>(null);
   const [query, setQuery] = useState("SELECT * FROM ...");
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<QueryResult | null>(null);
   const [error, setError] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [progressStats, setProgressStats] = useState({ solved: 0, total: 0 });
@@ -54,8 +73,9 @@ export default function ChallengesPage() {
         // Calculate progress stats
         const solved = res.data.filter((c: Challenge) => c.solved).length;
         setProgressStats({ solved, total: res.data.length });
-      } catch (err: any) {
-        if (err.response?.status === 401) {
+      } catch (err: unknown) {
+        const error = err as ApiError;
+        if (error.response?.status === 401) {
           // Token expired or invalid
           localStorage.removeItem("token");
           localStorage.removeItem("userEmail");
@@ -75,8 +95,9 @@ export default function ChallengesPage() {
       setQuery("");
       setResult(null);
       setError("");
-    } catch (err: any) {
-      if (err.response?.status === 401) {
+    } catch (err: unknown) {
+      const error = err as ApiError;
+      if (error.response?.status === 401) {
         localStorage.removeItem("token");
         localStorage.removeItem("userEmail");
         router.push("/landing");
@@ -95,13 +116,14 @@ export default function ChallengesPage() {
         user_query: query,
       });
       setResult(res.data);
-    } catch (err: any) {
-      if (err.response?.status === 401) {
+    } catch (err: unknown) {
+      const error = err as ApiError;
+      if (error.response?.status === 401) {
         localStorage.removeItem("token");
         localStorage.removeItem("userEmail");
         router.push("/landing");
       } else {
-        setError(err.response?.data?.detail || "Error occurred");
+        setError(error.response?.data?.detail || "Error occurred");
       }
     }
   };
@@ -122,20 +144,20 @@ export default function ChallengesPage() {
             </div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-full">
-                <thead className="bg-gray-100">
+                <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-2 sm:px-4 py-2 text-left font-medium text-gray-700 text-xs sm:text-sm">Column</th>
-                    <th className="px-2 sm:px-4 py-2 text-left font-medium text-gray-700 text-xs sm:text-sm">Type</th>
-                    <th className="px-2 sm:px-4 py-2 text-left font-medium text-gray-700 text-xs sm:text-sm">Constraints</th>
+                    <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Column</th>
+                    <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                    <th className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Constraints</th>
                   </tr>
                 </thead>
-                <tbody>
-                  {table.columns.map((column, colIndex) => (
-                    <tr key={colIndex} className="border-b border-gray-200 hover:bg-gray-50">
-                      <td className="px-2 sm:px-4 py-2 font-mono text-xs sm:text-sm">{column.name}</td>
-                      <td className="px-2 sm:px-4 py-2 font-mono text-xs sm:text-sm text-blue-600">{column.type}</td>
-                      <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-600">
-                        {column.constraints.length > 0 ? column.constraints.join(', ') : '-'}
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {table.columns.map((column, columnIndex) => (
+                    <tr key={columnIndex}>
+                      <td className="px-3 sm:px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">{column.name}</td>
+                      <td className="px-3 sm:px-4 py-2 whitespace-nowrap text-sm text-gray-500">{column.type}</td>
+                      <td className="px-3 sm:px-4 py-2 whitespace-nowrap text-sm text-gray-500">
+                        {column.constraints.length > 0 ? column.constraints.join(", ") : "None"}
                       </td>
                     </tr>
                   ))}
@@ -148,40 +170,33 @@ export default function ChallengesPage() {
     );
   };
 
-  const renderResultTable = (data: any[], title: string, columnNames?: string[]) => {
-    if (!data || data.length === 0) {
-      return (
-        <div className="bg-gray-100 p-3 sm:p-4 rounded">
-          <h3 className="font-semibold mb-2 text-sm sm:text-base">{title}</h3>
-          <p className="text-gray-500 text-sm">No results</p>
-        </div>
-      );
-    }
+  const renderResultTable = (data: Array<Array<string | number>>, title: string, columnNames?: string[]) => {
+    if (!data || data.length === 0) return null;
 
-    const headers = columnNames || Array.from({ length: data[0].length }, (_, i) => `Column ${i + 1}`);
-
+    const headers = columnNames || Object.keys(data[0] || {});
+    
     return (
       <div className="bg-white border rounded-lg overflow-hidden">
         <div className="bg-gray-50 px-3 sm:px-4 py-2 border-b">
-          <h3 className="font-semibold text-gray-800 text-sm sm:text-base">{title}</h3>
+          <h4 className="font-semibold text-gray-800 text-sm sm:text-base">{title}</h4>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-full">
-            <thead className="bg-gray-100">
+            <thead className="bg-gray-50">
               <tr>
                 {headers.map((header, index) => (
-                  <th key={index} className="px-2 sm:px-4 py-2 text-left font-medium text-gray-700 text-xs sm:text-sm">
+                  <th key={index} className="px-3 sm:px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     {header}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody>
+            <tbody className="bg-white divide-y divide-gray-200">
               {data.map((row, rowIndex) => (
-                <tr key={rowIndex} className="border-b border-gray-200 hover:bg-gray-50">
-                  {row.map((cell: any, cellIndex: number) => (
-                    <td key={cellIndex} className="px-2 sm:px-4 py-2 text-xs sm:text-sm">
-                      {cell}
+                <tr key={rowIndex}>
+                  {row.map((cell, cellIndex) => (
+                    <td key={cellIndex} className="px-3 sm:px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                      {String(cell)}
                     </td>
                   ))}
                 </tr>
@@ -343,8 +358,8 @@ export default function ChallengesPage() {
                     </div>
                     
                     <div className="grid grid-cols-1 gap-4 sm:gap-6">
-                      {renderResultTable(result.result, "Your Result", result.column_names)}
-                      {!result.passed && renderResultTable(result.expected, "Expected Result", result.expected_column_names)}
+                      {renderResultTable(result.result || [], "Your Result", result.column_names)}
+                      {!result.passed && renderResultTable(result.expected || [], "Expected Result", result.expected_column_names)}
                     </div>
                   </div>
                 )}

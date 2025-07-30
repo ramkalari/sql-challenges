@@ -19,15 +19,22 @@ interface SubmissionItem {
   submitted_at: string;
 }
 
+interface ApiError {
+  response?: {
+    status: number;
+  };
+}
+
 export default function ProfilePage() {
+  const [userEmail, setUserEmail] = useState("");
   const [progress, setProgress] = useState<ProgressItem[]>([]);
   const [submissions, setSubmissions] = useState<SubmissionItem[]>([]);
-  const [userEmail, setUserEmail] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const router = useRouter();
 
   useEffect(() => {
+    // Check if user is authenticated
     const token = localStorage.getItem("token");
     const email = localStorage.getItem("userEmail");
     
@@ -37,11 +44,12 @@ export default function ProfilePage() {
     }
 
     setUserEmail(email);
+    
+    // Set up axios defaults for authenticated requests
     axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
     
     const fetchData = async () => {
       try {
-        setLoading(true);
         const [progressRes, submissionsRes] = await Promise.all([
           axios.get("http://localhost:8000/user/progress"),
           axios.get("http://localhost:8000/user/submissions")
@@ -49,8 +57,9 @@ export default function ProfilePage() {
         
         setProgress(progressRes.data.progress);
         setSubmissions(submissionsRes.data.submissions);
-      } catch (err: any) {
-        if (err.response?.status === 401) {
+      } catch (err: unknown) {
+        const error = err as ApiError;
+        if (error.response?.status === 401) {
           localStorage.removeItem("token");
           localStorage.removeItem("userEmail");
           router.push("/landing");

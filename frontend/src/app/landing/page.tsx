@@ -9,8 +9,16 @@ interface AuthResponse {
   email: string;
 }
 
+interface ApiError {
+  response?: {
+    data?: {
+      detail?: string;
+    };
+  };
+}
+
 export default function LandingPage() {
-  const [isSignup, setIsSignup] = useState(true);
+  const [isSignup, setIsSignup] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -24,19 +32,22 @@ export default function LandingPage() {
 
     try {
       const endpoint = isSignup ? "/auth/signup" : "/auth/login";
-      const response = await axios.post<AuthResponse>(
-        `http://localhost:8000${endpoint}`,
-        { email, password }
-      );
+      const res = await axios.post(`http://localhost:8000${endpoint}`, {
+        email,
+        password,
+      });
 
-      // Store token in localStorage
-      localStorage.setItem("token", response.data.access_token);
-      localStorage.setItem("userEmail", response.data.email);
-
+      const data: AuthResponse = res.data;
+      
+      // Store token and email
+      localStorage.setItem("token", data.access_token);
+      localStorage.setItem("userEmail", data.email);
+      
       // Redirect to challenges
       router.push("/challenges");
-    } catch (err: any) {
-      setError(err.response?.data?.detail || "An error occurred");
+    } catch (err: unknown) {
+      const error = err as ApiError;
+      setError(error.response?.data?.detail || "An error occurred");
     } finally {
       setLoading(false);
     }
@@ -109,7 +120,7 @@ export default function LandingPage() {
                 </svg>
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">Real Database Schema</h3>
-              <p className="text-gray-600">Practice with realistic table structures and data that you'll encounter in real projects.</p>
+              <p className="text-gray-600">Practice with realistic table structures and data that you&apos;ll encounter in real projects.</p>
             </div>
 
             <div className="bg-white rounded-lg shadow-md p-6">
