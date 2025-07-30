@@ -9,17 +9,23 @@ import bcrypt
 import os
 from datetime import datetime, timedelta, timezone
 from challenges import CHALLENGES
+from challenge_container import challenge_manager
 
 app = FastAPI()
 security = HTTPBearer()
 
 # JWT Configuration
-SECRET_KEY = "your-secret-key-change-in-production"
+SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
+# CORS Configuration
 origins = [
     "http://localhost:3000",
+    "https://sql-challenges.vercel.app",
+    "https://sql-challenges-frontend.onrender.com",
+    "https://sql-challenges-frontend.vercel.app",
+    "https://sql-challenges.vercel.app",
 ]
 
 app.add_middleware(
@@ -438,40 +444,36 @@ def submit_query(challenge_id: int, req: ChallengeSubmitRequest, email: str = De
         raise HTTPException(status_code=404, detail="Challenge not found")
 
     try:
-        conn = sqlite3.connect(":memory:")
-        cursor = conn.cursor()
-        cursor.executescript(challenge["schema_sql"])
-        cursor.executescript(challenge["seed_sql"])
-        
-        # Execute user query
-        result = cursor.execute(req.user_query).fetchall()
-        result = [list(map(str, row)) for row in result]  # Normalize
-        
-        # Get column names from the user query
-        column_names = [description[0] for description in cursor.description] if cursor.description else []
-
-        # Get expected column names from challenge data
-        expected_column_names = challenge.get("expected_column_names", [])
-
-        # Check if passed
-        passed = result == challenge["expected_output"]
-        
-        # Get user ID and record submission/progress
+        # Get user ID for isolated execution
         user_id = get_user_id(email)
+        if not user_id:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Execute query in isolated container environment
+        result = challenge_manager.execute_challenge(challenge_id, str(user_id), req.user_query)
+        
+        # Record submission and progress
         if user_id:
-            record_submission(user_id, challenge_id, req.user_query, passed)
-            update_user_progress(user_id, challenge_id, passed)
-
-        if passed:
-            return {"passed": True, "result": result, "column_names": column_names}
+            record_submission(user_id, challenge_id, req.user_query, result.get("passed", False))
+            update_user_progress(user_id, challenge_id, result.get("passed", False))
+        
+        if result["success"]:
+            if result.get("passed", False):
+                return {
+                    "passed": True, 
+                    "result": result.get("results", []), 
+                    "column_names": result.get("columns", [])
+                }
+            else:
+                return {
+                    "passed": False, 
+                    "result": result.get("results", []), 
+                    "expected": challenge["expected_output"], 
+                    "column_names": result.get("columns", []),
+                    "expected_column_names": challenge.get("expected_column_names", [])
+                }
         else:
-            return {
-                "passed": False, 
-                "result": result, 
-                "expected": challenge["expected_output"], 
-                "column_names": column_names,
-                "expected_column_names": expected_column_names
-            }
+            raise HTTPException(status_code=400, detail=result.get("error", "Query execution failed"))
 
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

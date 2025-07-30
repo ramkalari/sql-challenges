@@ -5,4 +5,15 @@ pydantic[email]==2.5.0
 email-validator==2.1.0
 PyJWT==2.8.0
 bcrypt==4.1.2
-python-multipart==0.0.6 
+python-multipart==0.0.6
+
+# Database drivers (for future PostgreSQL support)
+psycopg2-binary==2.9.9
+sqlalchemy==2.0.23
+alembic==1.13.1
+
+# Containerization (for future Docker support)
+docker==7.0.0
+
+# HTTP client for Railway API
+aiohttp==3.9.1 

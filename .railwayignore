@@ -1,0 +1,41 @@
+# Development files
+.env
+.env.local
+.env.development
+.env.test
+
+# Git files
+.git
+.gitignore
+
+# Documentation
+README.md
+CONTRIBUTING.md
+LICENSE
+
+# Test files
+**/__pycache__
+**/.pytest_cache
+**/test_*.py
+**/*.test.js
+**/*.test.ts
+**/*.test.tsx
+
+# Node modules (for frontend)
+frontend/node_modules
+frontend/.next
+
+# Python cache
+**/__pycache__
+**/*.pyc
+**/*.pyo
+
+# IDE files
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db 
