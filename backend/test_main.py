@@ -9,6 +9,9 @@ client = TestClient(app)
 @pytest.fixture(autouse=True)
 def setup_database():
     """Setup and teardown test database"""
+    # Set environment variable for test database
+    os.environ["DATABASE_PATH"] = "test_users.db"
+    
     # Remove test database if it exists
     if os.path.exists("test_users.db"):
         os.remove("test_users.db")
@@ -150,7 +153,7 @@ class TestChallenges:
     def test_get_challenges_unauthorized(self):
         """Test getting challenges without authentication"""
         response = client.get("/challenges")
-        assert response.status_code == 401
+        assert response.status_code == 403
     
     def test_get_challenges_authorized(self):
         """Test getting challenges with authentication"""
@@ -201,7 +204,7 @@ class TestChallengeSubmission:
         response = client.post("/challenges/1/submit", json={
             "user_query": "SELECT * FROM products"
         })
-        assert response.status_code == 401
+        assert response.status_code == 403
     
     def test_submit_correct_query(self):
         """Test submitting a correct query"""

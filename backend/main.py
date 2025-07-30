@@ -6,7 +6,8 @@ import sqlite3
 import re
 import jwt
 import bcrypt
-from datetime import datetime, timedelta
+import os
+from datetime import datetime, timedelta, timezone
 from challenges import CHALLENGES
 
 app = FastAPI()
@@ -29,9 +30,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Database configuration
+def get_database_path():
+    return os.getenv("DATABASE_PATH", "users.db")
+
 # Database initialization
 def init_db():
-    conn = sqlite3.connect("users.db")
+    conn = sqlite3.connect(get_database_path())
     cursor = conn.cursor()
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
@@ -88,7 +93,7 @@ class ChallengeSubmitRequest(BaseModel):
 # Authentication functions
 def create_access_token(data: dict):
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
@@ -102,7 +107,7 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
         return email
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired")
-    except jwt.JWTError:
+    except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
 def hash_password(password: str) -> str:
@@ -113,7 +118,7 @@ def verify_password(password: str, hashed: str) -> bool:
 
 def get_user_id(email: str) -> int:
     """Get user ID from email"""
-    conn = sqlite3.connect("users.db")
+    conn = sqlite3.connect(get_database_path())
     cursor = conn.cursor()
     try:
         cursor.execute("SELECT id FROM users WHERE email = ?", (email,))
@@ -124,7 +129,7 @@ def get_user_id(email: str) -> int:
 
 def record_submission(user_id: int, challenge_id: int, query: str, passed: bool):
     """Record a user submission"""
-    conn = sqlite3.connect("users.db")
+    conn = sqlite3.connect(get_database_path())
     cursor = conn.cursor()
     try:
         cursor.execute("""
@@ -137,7 +142,7 @@ def record_submission(user_id: int, challenge_id: int, query: str, passed: bool)
 
 def update_user_progress(user_id: int, challenge_id: int, passed: bool):
     """Update user progress for a challenge"""
-    conn = sqlite3.connect("users.db")
+    conn = sqlite3.connect(get_database_path())
     cursor = conn.cursor()
     try:
         if passed:
@@ -181,7 +186,7 @@ def update_user_progress(user_id: int, challenge_id: int, passed: bool):
 
 def get_user_progress(user_id: int):
     """Get user's progress across all challenges"""
-    conn = sqlite3.connect("users.db")
+    conn = sqlite3.connect(get_database_path())
     cursor = conn.cursor()
     try:
         cursor.execute("""
@@ -196,7 +201,7 @@ def get_user_progress(user_id: int):
 
 def get_user_submissions(user_id: int, challenge_id: int = None):
     """Get user's submissions, optionally filtered by challenge"""
-    conn = sqlite3.connect("users.db")
+    conn = sqlite3.connect(get_database_path())
     cursor = conn.cursor()
     try:
         if challenge_id:
@@ -267,7 +272,7 @@ def parse_table_schema(schema_sql: str):
 
 @app.post("/auth/signup")
 def signup(user: UserSignup):
-    conn = sqlite3.connect("users.db")
+    conn = sqlite3.connect(get_database_path())
     cursor = conn.cursor()
     
     try:
@@ -299,7 +304,7 @@ def signup(user: UserSignup):
 
 @app.post("/auth/login")
 def login(user: UserLogin):
-    conn = sqlite3.connect("users.db")
+    conn = sqlite3.connect(get_database_path())
     cursor = conn.cursor()
     
     try:
