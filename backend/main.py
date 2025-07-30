@@ -20,13 +20,24 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 # CORS Configuration
-origins = [
-    "http://localhost:3000",
-    "https://sql-challenges.vercel.app",
-    "https://sql-challenges-frontend.onrender.com",
-    "https://sql-challenges-frontend.vercel.app",
-    "https://sql-challenges.vercel.app",
-]
+# Allow all origins for development, or use specific origins from environment
+ALLOW_ALL_ORIGINS = os.getenv("ALLOW_ALL_ORIGINS", "true").lower() == "true"
+
+if ALLOW_ALL_ORIGINS:
+    origins = ["*"]
+else:
+    origins = [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "https://sql-challenges.vercel.app",
+        "https://sql-challenges-frontend.onrender.com",
+        "https://sql-challenges-frontend.vercel.app",
+        "https://sql-challenges.vercel.app",
+        # Vercel domains
+        "https://*.vercel.app",
+        # Railway domains
+        "https://*.railway.app",
+    ]
 
 app.add_middleware(
     CORSMiddleware,
