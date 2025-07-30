@@ -32,7 +32,7 @@ export default function LandingPage() {
 
     try {
       const endpoint = isSignup ? "/auth/signup" : "/auth/login";
-      const res = await axios.post(`http://localhost:8000${endpoint}`, {
+      const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}${endpoint}`, {
         email,
         password,
       });

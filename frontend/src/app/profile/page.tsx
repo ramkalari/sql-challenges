@@ -51,8 +51,8 @@ export default function ProfilePage() {
     const fetchData = async () => {
       try {
         const [progressRes, submissionsRes] = await Promise.all([
-          axios.get("http://localhost:8000/user/progress"),
-          axios.get("http://localhost:8000/user/submissions")
+          axios.get(`${process.env.NEXT_PUBLIC_API_URL}/user/progress`),
+          axios.get(`${process.env.NEXT_PUBLIC_API_URL}/user/submissions`)
         ]);
         
         setProgress(progressRes.data.progress);

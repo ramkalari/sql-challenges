@@ -67,7 +67,7 @@ export default function ChallengesPage() {
     
     const fetchChallenges = async () => {
       try {
-        const res = await axios.get("http://localhost:8000/challenges");
+        const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/challenges`);
         setChallenges(res.data);
         
         // Calculate progress stats
@@ -90,7 +90,7 @@ export default function ChallengesPage() {
 
   const handleSelectChallenge = async (id: number) => {
     try {
-      const res = await axios.get(`http://localhost:8000/challenges/${id}`);
+      const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/challenges/${id}`);
       setSelectedChallenge(res.data);
       setQuery("");
       setResult(null);
@@ -112,7 +112,7 @@ export default function ChallengesPage() {
 
     try {
       setError("");
-      const res = await axios.post(`http://localhost:8000/challenges/${selectedChallenge.id}/submit`, {
+      const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/challenges/${selectedChallenge.id}/submit`, {
         user_query: query,
       });
       setResult(res.data);
