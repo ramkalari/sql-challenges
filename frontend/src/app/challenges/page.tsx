@@ -327,7 +327,7 @@ export default function ChallengesPage() {
                   <textarea
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    className="w-full h-24 sm:h-32 border border-gray-300 rounded-lg p-3 font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full h-24 sm:h-32 border border-gray-300 rounded-lg p-3 font-mono text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Write your SQL query here..."
                   />
                 </div>
