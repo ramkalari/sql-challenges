@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr
@@ -20,23 +20,21 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 # CORS Configuration
-# Allow all origins for development, or use specific origins from environment
-ALLOW_ALL_ORIGINS = os.getenv("ALLOW_ALL_ORIGINS", "true").lower() == "true"
+# Environment-aware CORS setup
+ENVIRONMENT = os.getenv("ENVIRONMENT", "production").lower()
+ALLOW_ALL_ORIGINS = os.getenv("ALLOW_ALL_ORIGINS", "false").lower() == "true"
 
 if ALLOW_ALL_ORIGINS:
     origins = ["*"]
-else:
+elif ENVIRONMENT == "development":
     origins = [
         "http://localhost:3000",
         "http://localhost:3001",
-        "https://sql-challenges.vercel.app",
-        "https://sql-challenges-frontend.onrender.com",
-        "https://sql-challenges-frontend.vercel.app",
-        "https://sql-challenges.vercel.app",
-        # Vercel domains
-        "https://*.vercel.app",
-        # Railway domains
-        "https://*.railway.app",
+    ]
+else:
+    # Production - only allow specific deployed domains
+    origins = [
+        "https://sql-challenges-two.vercel.app",
     ]
 
 app.add_middleware(
