@@ -387,5 +387,283 @@ INSERT INTO employees VALUES (3, 'Charlie', 1);
         "expected_output": [
             ['Engineering']
         ]
+    },
+    {
+        "id": 16,
+        "name": "Running Total with Window Functions",
+        "level": "Advanced",
+        "question": "Write a query to calculate the running total of sales for each month using window functions.",
+        "schema_sql": """
+CREATE TABLE sales (
+  id INTEGER PRIMARY KEY,
+  month TEXT,
+  amount INTEGER
+);
+""",
+        "seed_sql": """
+INSERT INTO sales VALUES (1, 'Jan', 1000);
+INSERT INTO sales VALUES (2, 'Feb', 1500);
+INSERT INTO sales VALUES (3, 'Mar', 1200);
+INSERT INTO sales VALUES (4, 'Apr', 1800);
+""",
+        "expected_column_names": ["month", "amount", "running_total"],
+        "expected_output": [
+            ['Jan', '1000', '1000'],
+            ['Feb', '1500', '2500'],
+            ['Mar', '1200', '3700'],
+            ['Apr', '1800', '5500']
+        ]
+    },
+    {
+        "id": 17,
+        "name": "Rank Employees by Salary",
+        "level": "Advanced",
+        "question": "Write a query to rank employees by salary within their department using window functions.",
+        "schema_sql": """
+CREATE TABLE employees (
+  id INTEGER PRIMARY KEY,
+  name TEXT,
+  department TEXT,
+  salary INTEGER
+);
+""",
+        "seed_sql": """
+INSERT INTO employees VALUES (1, 'Alice', 'Engineering', 80000);
+INSERT INTO employees VALUES (2, 'Bob', 'Engineering', 90000);
+INSERT INTO employees VALUES (3, 'Charlie', 'Sales', 70000);
+INSERT INTO employees VALUES (4, 'Diana', 'Sales', 75000);
+INSERT INTO employees VALUES (5, 'Eve', 'Engineering', 85000);
+""",
+        "expected_column_names": ["name", "department", "salary", "rank"],
+        "expected_output": [
+            ['Bob', 'Engineering', '90000', '1'],
+            ['Eve', 'Engineering', '85000', '2'],
+            ['Alice', 'Engineering', '80000', '3'],
+            ['Diana', 'Sales', '75000', '1'],
+            ['Charlie', 'Sales', '70000', '2']
+        ]
+    },
+    {
+        "id": 18,
+        "name": "Recursive CTE - Employee Hierarchy",
+        "level": "Advanced",
+        "question": "Write a query using a recursive CTE to find all employees and their managers in a hierarchical structure.",
+        "schema_sql": """
+CREATE TABLE employees (
+  id INTEGER PRIMARY KEY,
+  name TEXT,
+  manager_id INTEGER,
+  FOREIGN KEY(manager_id) REFERENCES employees(id)
+);
+""",
+        "seed_sql": """
+INSERT INTO employees VALUES (1, 'CEO', NULL);
+INSERT INTO employees VALUES (2, 'Manager A', 1);
+INSERT INTO employees VALUES (3, 'Manager B', 1);
+INSERT INTO employees VALUES (4, 'Employee 1', 2);
+INSERT INTO employees VALUES (5, 'Employee 2', 2);
+INSERT INTO employees VALUES (6, 'Employee 3', 3);
+""",
+        "expected_column_names": ["employee_name", "manager_name", "level"],
+        "expected_output": [
+            ['CEO', '', '0'],
+            ['Manager A', 'CEO', '1'],
+            ['Manager B', 'CEO', '1'],
+            ['Employee 1', 'Manager A', '2'],
+            ['Employee 2', 'Manager A', '2'],
+            ['Employee 3', 'Manager B', '2']
+        ]
+    },
+    {
+        "id": 19,
+        "name": "Pivot Table - Sales by Product and Region",
+        "level": "Advanced",
+        "question": "Write a query to create a pivot table showing sales amounts by product and region using conditional aggregation.",
+        "schema_sql": """
+CREATE TABLE sales (
+  id INTEGER PRIMARY KEY,
+  product TEXT,
+  region TEXT,
+  amount INTEGER
+);
+""",
+        "seed_sql": """
+INSERT INTO sales VALUES (1, 'Laptop', 'North', 1000);
+INSERT INTO sales VALUES (2, 'Laptop', 'South', 1200);
+INSERT INTO sales VALUES (3, 'Mouse', 'North', 500);
+INSERT INTO sales VALUES (4, 'Mouse', 'South', 600);
+INSERT INTO sales VALUES (5, 'Keyboard', 'North', 300);
+INSERT INTO sales VALUES (6, 'Keyboard', 'South', 400);
+""",
+        "expected_column_names": ["product", "north", "south"],
+        "expected_output": [
+            ['Laptop', '1000', '1200'],
+            ['Mouse', '500', '600'],
+            ['Keyboard', '300', '400']
+        ]
+    },
+    {
+        "id": 20,
+        "name": "Complex Subquery - Products Above Average Price",
+        "level": "Advanced",
+        "question": "Write a query to find all products with prices above the average price of all products in their category.",
+        "schema_sql": """
+CREATE TABLE products (
+  id INTEGER PRIMARY KEY,
+  name TEXT,
+  category TEXT,
+  price INTEGER
+);
+""",
+        "seed_sql": """
+INSERT INTO products VALUES (1, 'Laptop A', 'Electronics', 1200);
+INSERT INTO products VALUES (2, 'Laptop B', 'Electronics', 1000);
+INSERT INTO products VALUES (3, 'Mouse A', 'Electronics', 50);
+INSERT INTO products VALUES (4, 'Mouse B', 'Electronics', 30);
+INSERT INTO products VALUES (5, 'Book A', 'Books', 20);
+INSERT INTO products VALUES (6, 'Book B', 'Books', 25);
+""",
+        "expected_column_names": ["name", "category", "price"],
+        "expected_output": [
+            ['Laptop A', 'Electronics', '1200'],
+            ['Mouse A', 'Electronics', '50'],
+            ['Book B', 'Books', '25']
+        ]
+    },
+    {
+        "id": 21,
+        "name": "Self-Join - Employee Pairs",
+        "level": "Advanced",
+        "question": "Write a query to find all pairs of employees who work in the same department and have the same salary.",
+        "schema_sql": """
+CREATE TABLE employees (
+  id INTEGER PRIMARY KEY,
+  name TEXT,
+  department TEXT,
+  salary INTEGER
+);
+""",
+        "seed_sql": """
+INSERT INTO employees VALUES (1, 'Alice', 'Engineering', 80000);
+INSERT INTO employees VALUES (2, 'Bob', 'Engineering', 80000);
+INSERT INTO employees VALUES (3, 'Charlie', 'Sales', 70000);
+INSERT INTO employees VALUES (4, 'Diana', 'Sales', 70000);
+INSERT INTO employees VALUES (5, 'Eve', 'Engineering', 90000);
+""",
+        "expected_column_names": ["employee1", "employee2", "department", "salary"],
+        "expected_output": [
+            ['Alice', 'Bob', 'Engineering', '80000'],
+            ['Charlie', 'Diana', 'Sales', '70000']
+        ]
+    },
+    {
+        "id": 22,
+        "name": "Multiple Window Functions",
+        "level": "Advanced",
+        "question": "Write a query to calculate both the running total and the percentage of total sales for each month using multiple window functions.",
+        "schema_sql": """
+CREATE TABLE sales (
+  id INTEGER PRIMARY KEY,
+  month TEXT,
+  amount INTEGER
+);
+""",
+        "seed_sql": """
+INSERT INTO sales VALUES (1, 'Jan', 1000);
+INSERT INTO sales VALUES (2, 'Feb', 1500);
+INSERT INTO sales VALUES (3, 'Mar', 1200);
+INSERT INTO sales VALUES (4, 'Apr', 1800);
+""",
+        "expected_column_names": ["month", "amount", "running_total", "percentage"],
+        "expected_output": [
+            ['Jan', '1000', '1000', '18.18'],
+            ['Feb', '1500', '2500', '27.27'],
+            ['Mar', '1200', '3700', '21.82'],
+            ['Apr', '1800', '5500', '32.73']
+        ]
+    },
+    {
+        "id": 23,
+        "name": "Correlated Subquery - Top Performers",
+        "level": "Advanced",
+        "question": "Write a query to find employees who earn more than the average salary in their department using a correlated subquery.",
+        "schema_sql": """
+CREATE TABLE employees (
+  id INTEGER PRIMARY KEY,
+  name TEXT,
+  department TEXT,
+  salary INTEGER
+);
+""",
+        "seed_sql": """
+INSERT INTO employees VALUES (1, 'Alice', 'Engineering', 80000);
+INSERT INTO employees VALUES (2, 'Bob', 'Engineering', 90000);
+INSERT INTO employees VALUES (3, 'Charlie', 'Engineering', 70000);
+INSERT INTO employees VALUES (4, 'Diana', 'Sales', 75000);
+INSERT INTO employees VALUES (5, 'Eve', 'Sales', 65000);
+INSERT INTO employees VALUES (6, 'Frank', 'Sales', 85000);
+""",
+        "expected_column_names": ["name", "department", "salary"],
+        "expected_output": [
+            ['Bob', 'Engineering', '90000'],
+            ['Frank', 'Sales', '85000']
+        ]
+    },
+    {
+        "id": 24,
+        "name": "Date Functions and Intervals",
+        "level": "Advanced",
+        "question": "Write a query to find all orders placed in the last 30 days and calculate the days since each order was placed.",
+        "schema_sql": """
+CREATE TABLE orders (
+  id INTEGER PRIMARY KEY,
+  customer_name TEXT,
+  order_date DATE,
+  amount INTEGER
+);
+""",
+        "seed_sql": """
+INSERT INTO orders VALUES (1, 'Alice', '2024-01-15', 100);
+INSERT INTO orders VALUES (2, 'Bob', '2024-01-20', 200);
+INSERT INTO orders VALUES (3, 'Charlie', '2024-01-25', 150);
+INSERT INTO orders VALUES (4, 'Diana', '2023-12-01', 300);
+INSERT INTO orders VALUES (5, 'Eve', '2024-01-30', 250);
+""",
+        "expected_column_names": ["customer_name", "order_date", "amount", "days_ago"],
+        "expected_output": [
+            ['Alice', '2024-01-15', '100', '15'],
+            ['Bob', '2024-01-20', '200', '10'],
+            ['Charlie', '2024-01-25', '150', '5'],
+            ['Eve', '2024-01-30', '250', '0']
+        ]
+    },
+    {
+        "id": 25,
+        "name": "Complex Aggregation with CASE",
+        "level": "Advanced",
+        "question": "Write a query to categorize sales by amount ranges and count the number of sales in each range.",
+        "schema_sql": """
+CREATE TABLE sales (
+  id INTEGER PRIMARY KEY,
+  amount INTEGER
+);
+""",
+        "seed_sql": """
+INSERT INTO sales VALUES (1, 100);
+INSERT INTO sales VALUES (2, 250);
+INSERT INTO sales VALUES (3, 500);
+INSERT INTO sales VALUES (4, 750);
+INSERT INTO sales VALUES (5, 1200);
+INSERT INTO sales VALUES (6, 150);
+INSERT INTO sales VALUES (7, 300);
+INSERT INTO sales VALUES (8, 800);
+""",
+        "expected_column_names": ["range", "count"],
+        "expected_output": [
+            ['0-200', '2'],
+            ['201-500', '3'],
+            ['501-1000', '2'],
+            ['1000+', '1']
+        ]
     }
 ]

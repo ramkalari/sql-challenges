@@ -29,6 +29,11 @@ interface QueryResult {
   expected_column_names?: string[];
   error?: string;
   message?: string;
+  next_challenge?: {
+    id: number;
+    name: string;
+    level: string;
+  };
 }
 
 interface ApiError {
@@ -116,6 +121,40 @@ export default function ChallengesPage() {
         user_query: query,
       });
       setResult(res.data);
+      
+      // Update the challenges list immediately after successful submission
+      if (res.data.passed) {
+        setChallenges(prevChallenges => 
+          prevChallenges.map(challenge => 
+            challenge.id === selectedChallenge.id 
+              ? { 
+                  ...challenge, 
+                  solved: true, 
+                  solved_at: new Date().toISOString(),
+                  attempts: (challenge.attempts || 0) + 1
+                }
+              : challenge
+          )
+        );
+        
+        // Update progress stats
+        setProgressStats(prev => ({
+          solved: prev.solved + 1,
+          total: prev.total
+        }));
+      } else {
+        // Update attempts count even for failed submissions
+        setChallenges(prevChallenges => 
+          prevChallenges.map(challenge => 
+            challenge.id === selectedChallenge.id 
+              ? { 
+                  ...challenge, 
+                  attempts: (challenge.attempts || 0) + 1
+                }
+              : challenge
+          )
+        );
+      }
     } catch (err: unknown) {
       const error = err as ApiError;
       if (error.response?.status === 401) {
@@ -132,6 +171,24 @@ export default function ChallengesPage() {
     localStorage.removeItem("token");
     localStorage.removeItem("userEmail");
     router.push("/landing");
+  };
+
+  const handleNextChallenge = async () => {
+    try {
+      const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/challenges/next`);
+      if (res.data.next_challenge) {
+        handleSelectChallenge(res.data.next_challenge.id);
+      }
+    } catch (err: unknown) {
+      const error = err as ApiError;
+      if (error.response?.status === 401) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("userEmail");
+        router.push("/landing");
+      } else {
+        setError("Failed to get next challenge.");
+      }
+    }
   };
 
   const renderSchemaTable = (schemaTables: Challenge['schema_tables']) => {
@@ -251,10 +308,10 @@ export default function ChallengesPage() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
-        <div className="flex flex-col lg:flex-row">
+        <div className="flex flex-col lg:flex-row h-[calc(100vh-200px)]">
           {/* Sidebar */}
-          <div className="w-full lg:w-1/4 lg:pr-8 mb-6 lg:mb-0">
-            <h2 className="text-xl font-bold mb-4">Challenges</h2>
+          <div className="w-full lg:w-1/4 lg:pr-8 mb-6 lg:mb-0 lg:overflow-y-auto">
+            <h2 className="text-xl font-bold mb-4 sticky top-0 bg-gray-50 py-2">Challenges</h2>
             <div className="space-y-2">
               {challenges.map((c) => (
                 <button
@@ -296,7 +353,7 @@ export default function ChallengesPage() {
           </div>
 
           {/* Main Content */}
-          <div className="w-full lg:w-3/4">
+          <div className="w-full lg:w-3/4 lg:overflow-y-auto">
             {selectedChallenge ? (
               <div className="bg-white rounded-lg shadow-sm border p-4 sm:p-6">
                 <div className="mb-4 sm:mb-6">
@@ -334,7 +391,7 @@ export default function ChallengesPage() {
 
                 <button
                   onClick={handleSubmit}
-                  className="w-full sm:w-auto bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  className="w-full sm:w-auto bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200"
                 >
                   Run Query
                 </button>
@@ -347,7 +404,7 @@ export default function ChallengesPage() {
 
                 {result && (
                   <div className="mt-6">
-                    <div className="mb-4">
+                    <div className="mb-4 flex items-center justify-between">
                       <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
                         result.passed 
                           ? 'bg-green-100 text-green-800' 
@@ -355,6 +412,15 @@ export default function ChallengesPage() {
                       }`}>
                         {result.passed ? "✅ Passed" : "❌ Failed"}
                       </span>
+                      
+                                             {result.passed && result.next_challenge && (
+                         <button
+                           onClick={handleNextChallenge}
+                           className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors duration-200"
+                         >
+                           Next Challenge →
+                         </button>
+                       )}
                     </div>
                     
                     <div className="grid grid-cols-1 gap-4 sm:gap-6">

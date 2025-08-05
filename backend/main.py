@@ -201,6 +201,9 @@ def update_user_progress(user_id: int, challenge_id: int, passed: bool):
 
 def get_user_progress(user_id: int):
     """Get user's progress across all challenges"""
+    if user_id is None:
+        return []
+        
     conn = sqlite3.connect(get_database_path())
     cursor = conn.cursor()
     try:
@@ -429,6 +432,49 @@ def get_challenges(email: str = Depends(verify_token)):
     
     return challenges_with_progress
 
+def get_next_challenge(user_id: int) -> dict | None:
+    """Get the next unsolved challenge with least complexity for a user"""
+    if user_id is None:
+        return None
+        
+    level_order = {"Basic": 1, "Intermediate": 2, "Advanced": 3}
+    
+    # Get user's solved challenges
+    progress = get_user_progress(user_id)
+    solved_ids = {p[0] for p in progress}
+    
+    # Get unsolved challenges sorted by complexity
+    unsolved_challenges = [
+        c for c in CHALLENGES 
+        if c["id"] not in solved_ids
+    ]
+    
+    if not unsolved_challenges:
+        return None
+    
+    # Sort by level complexity, then by ID
+    unsolved_challenges.sort(key=lambda c: (level_order[c["level"]], c["id"]))
+    
+    next_challenge = unsolved_challenges[0]
+    return {
+        "id": next_challenge["id"],
+        "name": next_challenge["name"],
+        "level": next_challenge["level"]
+    }
+
+@app.get("/challenges/next")
+def get_next_challenge_endpoint(email: str = Depends(verify_token)):
+    """Get the next challenge for the user"""
+    user_id = get_user_id(email)
+    if not user_id:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    next_challenge = get_next_challenge(user_id)
+    if not next_challenge:
+        return {"message": "All challenges completed!", "next_challenge": None}
+    
+    return {"next_challenge": next_challenge}
+
 @app.get("/challenges/{challenge_id}")
 def get_challenge(challenge_id: int):
     challenge = next((c for c in CHALLENGES if c["id"] == challenge_id), None)
@@ -445,6 +491,19 @@ def get_challenge(challenge_id: int):
         "schema_tables": schema_tables,
         "level": challenge["level"]
     }
+
+@app.get("/challenges/next")
+def get_next_challenge_endpoint(email: str = Depends(verify_token)):
+    """Get the next challenge for the user"""
+    user_id = get_user_id(email)
+    if not user_id:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    next_challenge = get_next_challenge(user_id)
+    if not next_challenge:
+        return {"message": "All challenges completed!", "next_challenge": None}
+    
+    return {"next_challenge": next_challenge}
 
 @app.post("/challenges/{challenge_id}/submit")
 def submit_query(challenge_id: int, req: ChallengeSubmitRequest, email: str = Depends(verify_token)):
@@ -468,10 +527,13 @@ def submit_query(challenge_id: int, req: ChallengeSubmitRequest, email: str = De
         
         if result["success"]:
             if result.get("passed", False):
+                # Get next challenge info when current challenge is passed
+                next_challenge = get_next_challenge(user_id)
                 return {
                     "passed": True, 
                     "result": result.get("results", []), 
-                    "column_names": result.get("columns", [])
+                    "column_names": result.get("columns", []),
+                    "next_challenge": next_challenge
                 }
             else:
                 return {
