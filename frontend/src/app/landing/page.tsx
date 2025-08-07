@@ -181,6 +181,17 @@ export default function LandingPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Enter your password"
                   />
+                  {!isSignup && (
+                    <div className="mt-2 text-right">
+                      <button
+                        type="button"
+                        onClick={() => router.push('/forgot-password')}
+                        className="text-sm text-blue-600 hover:text-blue-500 font-medium transition-colors duration-200"
+                      >
+                        Forgot Password?
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {error && (
