@@ -37,7 +37,7 @@ export default function ResetPasswordPage() {
     try {
       const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/auth/verify-reset-token?token=${token}`);
       setTokenValid(response.data.valid);
-    } catch (err) {
+    } catch {
       setTokenValid(false);
       setError("Invalid or expired reset token");
     }
