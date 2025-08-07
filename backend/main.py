@@ -180,12 +180,12 @@ def get_smtp_config():
             "use_tls": True
         }
     else:
-        # Production - use Railway SMTP
+        # Production - use Resend SMTP
         return {
-            "host": os.getenv("SMTP_HOST", "smtp.railway.app"),
-            "port": int(os.getenv("SMTP_PORT", "587")),
-            "username": os.getenv("SMTP_USERNAME"),
-            "password": os.getenv("SMTP_PASSWORD"),
+            "host": os.getenv("RESEND_SMTP_HOST", "smtp.resend.com"),
+            "port": int(os.getenv("RESEND_SMTP_PORT", "587")),
+            "username": os.getenv("RESEND_SMTP_USERNAME", "resend"),
+            "password": os.getenv("RESEND_API_KEY"),
             "use_tls": True
         }
 

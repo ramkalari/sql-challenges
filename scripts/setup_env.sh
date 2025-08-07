@@ -46,11 +46,11 @@ MAILTRAP_PORT=2525
 MAILTRAP_USERNAME=your-mailtrap-username
 MAILTRAP_PASSWORD=your-mailtrap-password
 
-# Production (Railway SMTP - set automatically by Railway)
-# SMTP_HOST=smtp.railway.app
-# SMTP_PORT=587
-# SMTP_USERNAME=your-railway-smtp-username
-# SMTP_PASSWORD=your-railway-smtp-password
+# Production (Resend SMTP)
+# RESEND_SMTP_HOST=smtp.resend.com
+# RESEND_SMTP_PORT=587
+# RESEND_SMTP_USERNAME=resend
+# RESEND_API_KEY=your-resend-api-key
 
 # Email Settings
 FROM_EMAIL=noreply@sqlchallenges.com
@@ -65,7 +65,9 @@ print_status ".env file created successfully!"
 print_warning "Next steps:"
 echo "1. Get Mailtrap credentials from https://mailtrap.io"
 echo "2. Update MAILTRAP_USERNAME and MAILTRAP_PASSWORD in .env"
-echo "3. Generate a secure SECRET_KEY (you can use: openssl rand -hex 32)"
-echo "4. Update the SECRET_KEY in .env"
+echo "3. For production, get Resend API key from https://resend.com"
+echo "4. Update RESEND_API_KEY in .env for production"
+echo "5. Generate a secure SECRET_KEY (you can use: openssl rand -hex 32)"
+echo "6. Update the SECRET_KEY in .env"
 
 print_status "Environment setup complete! 🎉" 
