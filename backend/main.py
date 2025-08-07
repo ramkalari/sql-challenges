@@ -7,6 +7,10 @@ import re
 import jwt
 import bcrypt
 import os
+import secrets
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta, timezone
 from challenges import CHALLENGES
 from challenge_container import challenge_manager
@@ -88,6 +92,19 @@ def init_db():
         )
     """)
     
+    # Create password_reset_tokens table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS password_reset_tokens (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            token TEXT UNIQUE NOT NULL,
+            expires_at TIMESTAMP NOT NULL,
+            used BOOLEAN DEFAULT FALSE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    """)
+    
     conn.commit()
     conn.close()
 
@@ -104,6 +121,13 @@ class UserLogin(BaseModel):
 
 class ChallengeSubmitRequest(BaseModel):
     user_query: str
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
 
 # Authentication functions
 def create_access_token(data: dict):
@@ -139,6 +163,122 @@ def get_user_id(email: str) -> int:
         cursor.execute("SELECT id FROM users WHERE email = ?", (email,))
         result = cursor.fetchone()
         return result[0] if result else None
+    finally:
+        conn.close()
+
+def get_smtp_config():
+    """Get SMTP configuration based on environment"""
+    environment = os.getenv("ENVIRONMENT", "production").lower()
+    
+    if environment == "development":
+        # Development - use Mailtrap
+        return {
+            "host": os.getenv("MAILTRAP_HOST", "smtp.mailtrap.io"),
+            "port": int(os.getenv("MAILTRAP_PORT", "2525")),
+            "username": os.getenv("MAILTRAP_USERNAME"),
+            "password": os.getenv("MAILTRAP_PASSWORD"),
+            "use_tls": True
+        }
+    else:
+        # Production - use Railway SMTP
+        return {
+            "host": os.getenv("SMTP_HOST", "smtp.railway.app"),
+            "port": int(os.getenv("SMTP_PORT", "587")),
+            "username": os.getenv("SMTP_USERNAME"),
+            "password": os.getenv("SMTP_PASSWORD"),
+            "use_tls": True
+        }
+
+def send_email(to_email: str, subject: str, body: str) -> bool:
+    """Send email using configured SMTP service"""
+    try:
+        smtp_config = get_smtp_config()
+        
+        # Create message
+        msg = MIMEMultipart()
+        msg['From'] = os.getenv("FROM_EMAIL", "noreply@sqlchallenges.com")
+        msg['To'] = to_email
+        msg['Subject'] = subject
+        
+        # Add body
+        msg.attach(MIMEText(body, 'html'))
+        
+        # Send email
+        with smtplib.SMTP(smtp_config["host"], smtp_config["port"]) as server:
+            if smtp_config["use_tls"]:
+                server.starttls()
+            server.login(smtp_config["username"], smtp_config["password"])
+            server.send_message(msg)
+        
+        return True
+    except Exception as e:
+        print(f"Email sending failed: {e}")
+        return False
+
+def generate_reset_token() -> str:
+    """Generate a secure reset token"""
+    return secrets.token_urlsafe(32)
+
+def create_password_reset_token(user_id: int) -> str:
+    """Create a password reset token for a user"""
+    conn = sqlite3.connect(get_database_path())
+    cursor = conn.cursor()
+    try:
+        # Start transaction
+        conn.execute("BEGIN TRANSACTION")
+        
+        # Clean up old tokens for this user
+        cursor.execute("""
+            DELETE FROM password_reset_tokens 
+            WHERE user_id = ? OR expires_at < ?
+        """, (user_id, datetime.now()))
+        
+        # Generate new token
+        token = generate_reset_token()
+        expires_at = datetime.now() + timedelta(minutes=30)  # 30 minutes expiry
+        
+        # Insert new token
+        cursor.execute("""
+            INSERT INTO password_reset_tokens (user_id, token, expires_at)
+            VALUES (?, ?, ?)
+        """, (user_id, token, expires_at))
+        
+        # Commit transaction
+        conn.commit()
+        return token
+    except Exception as e:
+        # Rollback transaction on error
+        conn.rollback()
+        raise e
+    finally:
+        conn.close()
+
+def verify_reset_token(token: str) -> int | None:
+    """Verify a reset token and return user_id if valid"""
+    conn = sqlite3.connect(get_database_path())
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            SELECT user_id FROM password_reset_tokens 
+            WHERE token = ? AND expires_at > ? AND used = FALSE
+        """, (token, datetime.now()))
+        
+        result = cursor.fetchone()
+        return result[0] if result else None
+    finally:
+        conn.close()
+
+def mark_token_as_used(token: str):
+    """Mark a reset token as used"""
+    conn = sqlite3.connect(get_database_path())
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            UPDATE password_reset_tokens 
+            SET used = TRUE 
+            WHERE token = ?
+        """, (token,))
+        conn.commit()
     finally:
         conn.close()
 
@@ -363,6 +503,104 @@ def login(user: UserLogin):
 @app.get("/auth/me")
 def get_current_user(email: str = Depends(verify_token)):
     return {"email": email}
+
+@app.post("/auth/forgot-password")
+def forgot_password(req: ForgotPasswordRequest):
+    """Send password reset email"""
+    try:
+        # Check if user exists
+        user_id = get_user_id(req.email)
+        if not user_id:
+            # Don't reveal if email exists or not for security
+            return {"message": "If the email exists, a password reset link has been sent."}
+        
+        # Create reset token
+        token = create_password_reset_token(user_id)
+        
+        # Create reset URL
+        frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+        reset_url = f"{frontend_url}/reset-password?token={token}"
+        
+        # Email content
+        subject = "Password Reset Request - SQL Challenges"
+        body = f"""
+        <html>
+        <body>
+            <h2>Password Reset Request</h2>
+            <p>You requested a password reset for your SQL Challenges account.</p>
+            <p>Click the link below to reset your password:</p>
+            <p><a href="{reset_url}">Reset Password</a></p>
+            <p>This link will expire in 30 minutes.</p>
+            <p>If you didn't request this reset, please ignore this email.</p>
+            <br>
+            <p>Best regards,<br>SQL Challenges Team</p>
+        </body>
+        </html>
+        """
+        
+        # Send email
+        if send_email(req.email, subject, body):
+            return {"message": "If the email exists, a password reset link has been sent."}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to send email")
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="An error occurred")
+
+@app.post("/auth/reset-password")
+def reset_password(req: ResetPasswordRequest):
+    """Reset password using token"""
+    try:
+        # Verify token
+        user_id = verify_reset_token(req.token)
+        if not user_id:
+            raise HTTPException(status_code=400, detail="Invalid or expired token")
+        
+        # Hash new password
+        password_hash = hash_password(req.new_password)
+        
+        # Update password
+        conn = sqlite3.connect(get_database_path())
+        cursor = conn.cursor()
+        try:
+            # Start transaction
+            conn.execute("BEGIN TRANSACTION")
+            
+            # Update password
+            cursor.execute("""
+                UPDATE users 
+                SET password_hash = ? 
+                WHERE id = ?
+            """, (password_hash, user_id))
+            
+            # Mark token as used
+            mark_token_as_used(req.token)
+            
+            # Commit transaction
+            conn.commit()
+            
+            return {"message": "Password reset successfully"}
+            
+        except Exception as e:
+            # Rollback transaction on error
+            conn.rollback()
+            raise e
+        finally:
+            conn.close()
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="An error occurred")
+
+@app.get("/auth/verify-reset-token")
+def verify_reset_token_endpoint(token: str):
+    """Verify if a reset token is valid"""
+    user_id = verify_reset_token(token)
+    if user_id:
+        return {"valid": True}
+    else:
+        return {"valid": False}
 
 @app.get("/user/progress")
 def get_user_progress_endpoint(email: str = Depends(verify_token)):
