@@ -160,6 +160,9 @@ def update_user_progress(user_id: int, challenge_id: int, passed: bool):
     conn = sqlite3.connect(get_database_path())
     cursor = conn.cursor()
     try:
+        # Start transaction
+        conn.execute("BEGIN TRANSACTION")
+        
         if passed:
             # Check if already solved
             cursor.execute("""
@@ -195,7 +198,12 @@ def update_user_progress(user_id: int, challenge_id: int, passed: bool):
                     VALUES (?, ?, 1)
                 """, (user_id, challenge_id))
         
+        # Commit transaction
         conn.commit()
+    except Exception as e:
+        # Rollback transaction on error
+        conn.rollback()
+        raise e
     finally:
         conn.close()
 
