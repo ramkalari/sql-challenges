@@ -541,18 +541,25 @@ def get_current_user(email: str = Depends(verify_token)):
 def forgot_password(req: ForgotPasswordRequest):
     """Send password reset email"""
     try:
+        print(f"=== FORGOT PASSWORD REQUEST === Email: {req.email}")
+        
         # Check if user exists
         user_id = get_user_id(req.email)
+        print(f"User ID found: {user_id}")
+        
         if not user_id:
             # Don't reveal if email exists or not for security
+            print("User not found, returning generic message")
             return {"message": "If the email exists, a password reset link has been sent."}
         
         # Create reset token
         token = create_password_reset_token(user_id)
+        print(f"Reset token created: {token[:20]}...")
         
         # Create reset URL
         frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
         reset_url = f"{frontend_url}/reset-password?token={token}"
+        print(f"Reset URL: {reset_url}")
         
         # Email content
         subject = "Password Reset Request - SQL Challenges"
@@ -571,13 +578,17 @@ def forgot_password(req: ForgotPasswordRequest):
         </html>
         """
         
+        print("About to send email...")
         # Send email
         if send_email(req.email, subject, body):
+            print("Email sent successfully!")
             return {"message": "If the email exists, a password reset link has been sent."}
         else:
+            print("Email sending failed!")
             raise HTTPException(status_code=500, detail="Failed to send email")
             
     except Exception as e:
+        print(f"Exception in forgot_password: {e}")
         raise HTTPException(status_code=500, detail="An error occurred")
 
 @app.post("/auth/reset-password")
