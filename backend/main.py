@@ -243,7 +243,17 @@ def send_email(to_email: str, subject: str, body: str) -> bool:
                     "html": body
                 })
                 
-                print(f"Email sent successfully: {response.id}")
+                print(f"Response type: {type(response)}")
+                print(f"Response: {response}")
+                
+                # Handle both object and dict responses
+                if hasattr(response, 'id'):
+                    print(f"Email sent successfully: {response.id}")
+                elif isinstance(response, dict) and 'id' in response:
+                    print(f"Email sent successfully: {response['id']}")
+                else:
+                    print(f"Email sent successfully: {response}")
+                
                 return True
                 
             except Exception as e:
