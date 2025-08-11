@@ -242,6 +242,11 @@ def send_email(to_email: str, subject: str, body: str) -> bool:
             except Exception as e:
                 print(f"Resend SDK error: {e}")
                 print(f"Error type: {type(e)}")
+                print(f"Error details: {str(e)}")
+                if hasattr(e, 'status_code'):
+                    print(f"Status code: {e.status_code}")
+                if hasattr(e, 'response'):
+                    print(f"Response: {e.response}")
                 return False
                 
     except Exception as e:
