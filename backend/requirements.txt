@@ -16,4 +16,7 @@ alembic==1.13.1
 docker==7.0.0
 
 # HTTP client for Railway API
-aiohttp==3.9.1 
+aiohttp==3.9.1
+
+# Resend Python SDK
+resend==2.0.0 

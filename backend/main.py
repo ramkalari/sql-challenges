@@ -9,6 +9,7 @@ import bcrypt
 import os
 import secrets
 import smtplib
+import resend
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta, timezone
@@ -190,27 +191,55 @@ def get_smtp_config():
         }
 
 def send_email(to_email: str, subject: str, body: str) -> bool:
-    """Send email using configured SMTP service"""
+    """Send email using configured service"""
     try:
-        smtp_config = get_smtp_config()
+        environment = os.getenv("ENVIRONMENT", "production").lower()
         
-        # Create message
-        msg = MIMEMultipart()
-        msg['From'] = os.getenv("FROM_EMAIL", "noreply@sqlchallenges.com")
-        msg['To'] = to_email
-        msg['Subject'] = subject
-        
-        # Add body
-        msg.attach(MIMEText(body, 'html'))
-        
-        # Send email
-        with smtplib.SMTP(smtp_config["host"], smtp_config["port"]) as server:
-            if smtp_config["use_tls"]:
-                server.starttls()
-            server.login(smtp_config["username"], smtp_config["password"])
-            server.send_message(msg)
-        
-        return True
+        if environment == "development":
+            # Development - use SMTP (Mailtrap)
+            smtp_config = get_smtp_config()
+            
+            # Create message
+            msg = MIMEMultipart()
+            msg['From'] = os.getenv("FROM_EMAIL", "noreply@sqlchallenges.com")
+            msg['To'] = to_email
+            msg['Subject'] = subject
+            
+            # Add body
+            msg.attach(MIMEText(body, 'html'))
+            
+            # Send email
+            with smtplib.SMTP(smtp_config["host"], smtp_config["port"]) as server:
+                if smtp_config["use_tls"]:
+                    server.starttls()
+                server.login(smtp_config["username"], smtp_config["password"])
+                server.send_message(msg)
+            
+            return True
+        else:
+            # Production - use Resend SDK
+            api_key = os.getenv("RESEND_API_KEY")
+            if not api_key:
+                print("RESEND_API_KEY not set")
+                return False
+            
+            try:
+                resend.api_key = api_key
+                
+                response = resend.Emails.send({
+                    "from": os.getenv("FROM_EMAIL", "noreply@sqlchallenges.com"),
+                    "to": [to_email],
+                    "subject": subject,
+                    "html": body
+                })
+                
+                print(f"Email sent successfully: {response.id}")
+                return True
+                
+            except Exception as e:
+                print(f"Resend SDK error: {e}")
+                return False
+                
     except Exception as e:
         print(f"Email sending failed: {e}")
         return False
