@@ -218,17 +218,24 @@ def send_email(to_email: str, subject: str, body: str) -> bool:
             return True
         else:
             # Production - use Resend SDK
+            print("=== ENTERING PRODUCTION EMAIL PATH ===")
             api_key = os.getenv("RESEND_API_KEY")
+            print(f"API key exists: {bool(api_key)}")
             if not api_key:
                 print("RESEND_API_KEY not set")
                 return False
             
             try:
+                print("Setting resend.api_key...")
                 resend.api_key = api_key
+                print("resend.api_key set successfully")
                 
                 from_email = os.getenv("FROM_EMAIL", "noreply@sqlchallenges.com")
                 print(f"Attempting to send email from {from_email} to {to_email}")
+                print(f"Subject: {subject}")
+                print(f"Body length: {len(body)} characters")
                 
+                print("Calling resend.Emails.send...")
                 response = resend.Emails.send({
                     "from": from_email,
                     "to": [to_email],
