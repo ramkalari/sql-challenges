@@ -260,10 +260,23 @@ def send_email(to_email: str, subject: str, body: str) -> bool:
                 print(f"Resend SDK error: {e}")
                 print(f"Error type: {type(e)}")
                 print(f"Error details: {str(e)}")
+                
+                # Try to get more specific error information
                 if hasattr(e, 'status_code'):
                     print(f"Status code: {e.status_code}")
                 if hasattr(e, 'response'):
                     print(f"Response: {e.response}")
+                if hasattr(e, 'message'):
+                    print(f"Error message: {e.message}")
+                if hasattr(e, 'args'):
+                    print(f"Error args: {e.args}")
+                
+                # Check if it's a domain verification issue
+                if "domain" in str(e).lower() or "verify" in str(e).lower():
+                    print("This might be a domain verification issue")
+                if "unauthorized" in str(e).lower() or "permission" in str(e).lower():
+                    print("This might be an API key permission issue")
+                
                 return False
                 
     except Exception as e:
