@@ -226,8 +226,11 @@ def send_email(to_email: str, subject: str, body: str) -> bool:
             try:
                 resend.api_key = api_key
                 
+                from_email = os.getenv("FROM_EMAIL", "noreply@sqlchallenges.com")
+                print(f"Attempting to send email from {from_email} to {to_email}")
+                
                 response = resend.Emails.send({
-                    "from": os.getenv("FROM_EMAIL", "noreply@sqlchallenges.com"),
+                    "from": from_email,
                     "to": [to_email],
                     "subject": subject,
                     "html": body
@@ -238,6 +241,7 @@ def send_email(to_email: str, subject: str, body: str) -> bool:
                 
             except Exception as e:
                 print(f"Resend SDK error: {e}")
+                print(f"Error type: {type(e)}")
                 return False
                 
     except Exception as e:
