@@ -16,5 +16,11 @@
         "DATABASE_PATH": "/data/users.db"
       }
     }
-  }
+  },
+  "volumes": [
+    {
+      "name": "data",
+      "mountPath": "/data"
+    }
+  ]
 } 

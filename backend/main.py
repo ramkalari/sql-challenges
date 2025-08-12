@@ -663,7 +663,7 @@ def reset_password(req: ResetPasswordRequest):
         except Exception as e:
             # Rollback transaction on error
             conn.rollback()
-            print(f"Exception in reset password: {e}")
+            print(f"Exception in reset password flow: {e}")
             raise e
         finally:
             conn.close()
