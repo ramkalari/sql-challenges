@@ -13,7 +13,8 @@
     "production": {
       "variables": {
         "SECRET_KEY": "your-production-secret-key-here",
-        "DATABASE_PATH": "/data/users.db"
+        "DATABASE_PATH": "/data/users.db",
+        "RAILWAY_RUN_UID": "0"
       }
     }
   },

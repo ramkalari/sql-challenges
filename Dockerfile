@@ -25,9 +25,6 @@ RUN useradd -m -u 1000 appuser
 # Create data directory for persistent storage
 RUN mkdir -p /data && chown -R appuser:appuser /data
 
-# Declare volume for persistent data
-VOLUME /data
-
 # Set ownership of app directory
 RUN chown -R appuser:appuser /app
 USER appuser
