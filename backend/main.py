@@ -52,6 +52,12 @@ app.add_middleware(
 
 # Database configuration
 def get_database_path():
+    # Use Railway's volume mount path if available, otherwise fallback to DATABASE_PATH
+    volume_mount_path = os.getenv("RAILWAY_VOLUME_MOUNT_PATH")
+    if volume_mount_path:
+        # Ensure the directory exists
+        os.makedirs(volume_mount_path, exist_ok=True)
+        return os.path.join(volume_mount_path, "users.db")
     return os.getenv("DATABASE_PATH", "users.db")
 
 # Database initialization
