@@ -13,7 +13,7 @@
     "production": {
       "variables": {
         "SECRET_KEY": "your-production-secret-key-here",
-        "DATABASE_PATH": "users.db"
+        "DATABASE_PATH": "/data/users.db"
       }
     }
   }
