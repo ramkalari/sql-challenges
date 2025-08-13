@@ -68,6 +68,18 @@ def get_database_path():
     print(f"Using fallback database path: {fallback_path}")
     return fallback_path
 
+def get_db_connection():
+    """Get a database connection with proper timeout and isolation settings"""
+    conn = sqlite3.connect(
+        get_database_path(),
+        timeout=30.0  # Wait up to 30 seconds for database to unlock
+    )
+    # Enable WAL mode for better concurrency
+    conn.execute("PRAGMA journal_mode=WAL")
+    # Set busy timeout
+    conn.execute("PRAGMA busy_timeout=30000")
+    return conn
+
 # Database initialization
 def init_db():
     print(f"Initializing database at: {get_database_path()}")
@@ -351,9 +363,13 @@ def verify_reset_token(token: str) -> int | None:
     finally:
         conn.close()
 
-def mark_token_as_used(token: str):
+def mark_token_as_used(token: str, conn=None):
     """Mark a reset token as used"""
-    conn = sqlite3.connect(get_database_path())
+    should_close = False
+    if conn is None:
+        conn = get_db_connection()
+        should_close = True
+    
     cursor = conn.cursor()
     try:
         cursor.execute("""
@@ -361,9 +377,11 @@ def mark_token_as_used(token: str):
             SET used = TRUE 
             WHERE token = ?
         """, (token,))
-        conn.commit()
+        if should_close:
+            conn.commit()
     finally:
-        conn.close()
+        if should_close:
+            conn.close()
 
 def record_submission(user_id: int, challenge_id: int, query: str, passed: bool):
     """Record a user submission"""
@@ -654,7 +672,7 @@ def reset_password(req: ResetPasswordRequest):
         password_hash = hash_password(req.new_password)
         
         # Update password
-        conn = sqlite3.connect(get_database_path())
+        conn = get_db_connection()
         cursor = conn.cursor()
         try:
             # Start transaction
@@ -668,7 +686,7 @@ def reset_password(req: ResetPasswordRequest):
             """, (password_hash, user_id))
             
             # Mark token as used
-            mark_token_as_used(req.token)
+            mark_token_as_used(req.token, conn)
             
             # Commit transaction
             conn.commit()
@@ -678,7 +696,7 @@ def reset_password(req: ResetPasswordRequest):
         except Exception as e:
             # Rollback transaction on error
             conn.rollback()
-            print(f"Exception in reset password flow: {e}")
+            print(f"Exception in reset password: {e}")
             raise e
         finally:
             conn.close()
