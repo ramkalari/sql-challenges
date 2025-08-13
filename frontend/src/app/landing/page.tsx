@@ -105,7 +105,7 @@ export default function LandingPage() {
               {/* Randy Pausch Quote */}
               <div className="mt-8 p-6 bg-gradient-to-r from-orange-50 to-red-50 border-l-4 border-orange-400 rounded-lg">
                 <blockquote className="text-lg md:text-xl text-gray-800 italic">
-                  "The brick walls are there for a reason. The brick walls are not there to keep us out. The brick walls are there to give us a chance to show how badly we want something."
+                  &ldquo;The brick walls are there for a reason. The brick walls are not there to keep us out. The brick walls are there to give us a chance to show how badly we want something.&rdquo;
                 </blockquote>
                 <cite className="block mt-3 text-sm text-gray-600 font-medium">
                   — Randy Pausch, The Last Lecture
