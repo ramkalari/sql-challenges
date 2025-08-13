@@ -23,10 +23,12 @@ COPY backend/ .
 RUN useradd -m -u 1000 appuser
 
 # Create data directory for persistent storage
-RUN mkdir -p /data && chown -R appuser:appuser /data
+RUN mkdir -p /data
 
 # Set ownership of app directory
 RUN chown -R appuser:appuser /app
+
+# Switch to appuser
 USER appuser
 
 # Expose port
