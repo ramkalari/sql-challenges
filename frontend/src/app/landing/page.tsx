@@ -60,7 +60,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
-              <h1 className="text-xl font-bold text-gray-900">SQL Challenges</h1>
+              <h1 className="text-xl font-bold text-gray-900">Brickwall Academy</h1>
             </div>
             <div className="flex items-center space-x-2 sm:space-x-4">
               <button
@@ -101,6 +101,19 @@ export default function LandingPage() {
               <p className="mt-3 max-w-md mx-auto lg:mx-0 text-sm text-gray-500 sm:text-base md:mt-5 md:text-lg lg:text-xl md:max-w-3xl px-4 lg:px-0">
                 Practice SQL queries with real-world scenarios. Get instant feedback and improve your database skills.
               </p>
+              
+              {/* Randy Pausch Quote */}
+              <div className="mt-8 p-6 bg-gradient-to-r from-orange-50 to-red-50 border-l-4 border-orange-400 rounded-lg">
+                <blockquote className="text-lg md:text-xl text-gray-800 italic">
+                  "The brick walls are there for a reason. The brick walls are not there to keep us out. The brick walls are there to give us a chance to show how badly we want something."
+                </blockquote>
+                <cite className="block mt-3 text-sm text-gray-600 font-medium">
+                  — Randy Pausch, The Last Lecture
+                </cite>
+                <p className="mt-3 text-sm text-gray-700">
+                  Every SQL challenge is a brick wall waiting to be conquered. Show your determination and break through to become a database expert.
+                </p>
+              </div>
             </div>
 
             {/* Features */}

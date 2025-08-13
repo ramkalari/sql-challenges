@@ -51,7 +51,7 @@ MAILTRAP_PASSWORD=your-mailtrap-password
 
 # Email Settings
 FROM_EMAIL=noreply@sqlchallenges.com
-FRONTEND_URL=http://localhost:3000
+FRONTEND_URL=https://brickwallacademy.com
 
 # Frontend Environment Variables
 NEXT_PUBLIC_API_URL=http://localhost:8000

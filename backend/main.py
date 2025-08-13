@@ -39,7 +39,7 @@ elif ENVIRONMENT == "development":
 else:
     # Production - only allow specific deployed domains
     origins = [
-        "https://sql-challenges-two.vercel.app",
+        "https://brickwallacademy.com",
     ]
 
 app.add_middleware(
@@ -82,7 +82,6 @@ def get_db_connection():
 
 # Database initialization
 def init_db():
-    print(f"Initializing database at: {get_database_path()}")
     conn = sqlite3.connect(get_database_path())
     cursor = conn.cursor()
     cursor.execute("""
