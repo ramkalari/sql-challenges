@@ -55,29 +55,17 @@ def get_database_path():
     # Use Railway's volume mount path if available, otherwise fallback to DATABASE_PATH
     volume_mount_path = os.getenv("RAILWAY_VOLUME_MOUNT_PATH")
     print(f"RAILWAY_VOLUME_MOUNT_PATH: {volume_mount_path}")
-    print(f"Current working directory: {os.getcwd()}")
-    print(f"Directory contents: {os.listdir('.')}")
     
     if volume_mount_path:
-        print(f"Volume mount path exists: {os.path.exists(volume_mount_path)}")
-        print(f"Volume mount path is directory: {os.path.isdir(volume_mount_path)}")
-        print(f"Volume mount path is writable: {os.access(volume_mount_path, os.W_OK)}")
-        
         # Ensure the directory exists
-        try:
-            os.makedirs(volume_mount_path, exist_ok=True)
-            print(f"Successfully created/verified directory: {volume_mount_path}")
-        except Exception as e:
-            print(f"Error creating directory {volume_mount_path}: {e}")
-            # Fallback to current directory
-            return "users.db"
-        
+        os.makedirs(volume_mount_path, exist_ok=True)
         db_path = os.path.join(volume_mount_path, "users.db")
-        print(f"Database path: {db_path}")
+        print(f"Using volume database path: {db_path}")
         return db_path
     
+    # Fallback to DATABASE_PATH environment variable or default
     fallback_path = os.getenv("DATABASE_PATH", "users.db")
-    print(f"Using fallback path: {fallback_path}")
+    print(f"Using fallback database path: {fallback_path}")
     return fallback_path
 
 # Database initialization
