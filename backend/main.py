@@ -382,6 +382,61 @@ def mark_token_as_used(token: str, conn=None):
         if should_close:
             conn.close()
 
+def record_submission_and_progress(user_id: int, challenge_id: int, query: str, passed: bool):
+    """Record user submission and update progress in a single transaction"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        # Start transaction
+        conn.execute("BEGIN TRANSACTION")
+        
+        # Record submission
+        cursor.execute("""
+            INSERT INTO user_submissions (user_id, challenge_id, query, passed)
+            VALUES (?, ?, ?, ?)
+        """, (user_id, challenge_id, query, passed))
+        
+        # Update progress - simple and readable
+        cursor.execute("""
+            SELECT id, attempts, solved_at FROM user_progress 
+            WHERE user_id = ? AND challenge_id = ?
+        """, (user_id, challenge_id))
+        
+        existing = cursor.fetchone()
+        
+        if existing:
+            # Update existing record - always increment attempts
+            cursor.execute("""
+                UPDATE user_progress 
+                SET attempts = attempts + 1,
+                    solved_at = CASE 
+                        WHEN ? = 1 AND solved_at IS NULL THEN CURRENT_TIMESTAMP 
+                        ELSE solved_at 
+                    END
+                WHERE user_id = ? AND challenge_id = ?
+            """, (passed, user_id, challenge_id))
+        else:
+            # Insert new record
+            if passed:
+                cursor.execute("""
+                    INSERT INTO user_progress (user_id, challenge_id, attempts, solved_at)
+                    VALUES (?, ?, 1, CURRENT_TIMESTAMP)
+                """, (user_id, challenge_id))
+            else:
+                cursor.execute("""
+                    INSERT INTO user_progress (user_id, challenge_id, attempts, solved_at)
+                    VALUES (?, ?, 1, NULL)
+                """, (user_id, challenge_id))
+        
+        # Commit transaction
+        conn.commit()
+    except Exception as e:
+        # Rollback transaction on error
+        conn.rollback()
+        raise e
+    finally:
+        conn.close()
+
 def record_submission(user_id: int, challenge_id: int, query: str, passed: bool):
     """Record a user submission"""
     conn = sqlite3.connect(get_database_path())
@@ -878,10 +933,8 @@ def submit_query(challenge_id: int, req: ChallengeSubmitRequest, email: str = De
         # Execute query in isolated container environment
         result = challenge_manager.execute_challenge(challenge_id, str(user_id), req.user_query)
         
-        # Record submission and progress
-        if user_id:
-            record_submission(user_id, challenge_id, req.user_query, result.get("passed", False))
-            update_user_progress(user_id, challenge_id, result.get("passed", False))
+        # Record submission and progress in a single transaction
+        record_submission_and_progress(user_id, challenge_id, req.user_query, result.get("passed", False))
         
         if result["success"]:
             if result.get("passed", False):
