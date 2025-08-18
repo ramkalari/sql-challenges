@@ -156,6 +156,19 @@ class ResetPasswordRequest(BaseModel):
     token: str
     new_password: str
 
+class AdminStats(BaseModel):
+    total_users: int
+    total_challenges: int
+    total_submissions: int
+
+class UserStats(BaseModel):
+    id: int
+    email: str
+    created_at: str
+    total_attempts: int
+    challenges_solved: int
+    last_activity: str
+
 # Authentication functions
 def create_access_token(data: dict):
     to_encode = data.copy()
@@ -175,6 +188,14 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
         raise HTTPException(status_code=401, detail="Token expired")
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
+
+def verify_admin_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    email = verify_token(credentials)
+    # Check if user is admin (you can modify this logic as needed)
+    admin_emails = os.getenv("ADMIN_EMAILS", "").split(",")
+    if email not in admin_emails:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return email
 
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
@@ -959,3 +980,138 @@ def submit_query(challenge_id: int, req: ChallengeSubmitRequest, email: str = De
 
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+# Admin endpoints
+@app.get("/admin/stats")
+def get_admin_stats(admin_email: str = Depends(verify_admin_token)):
+    """Get overall platform statistics"""
+    conn = sqlite3.connect(get_database_path())
+    cursor = conn.cursor()
+    try:
+        # Get total users
+        cursor.execute("SELECT COUNT(*) FROM users")
+        total_users = cursor.fetchone()[0]
+        
+        # Get total challenges
+        total_challenges = len(CHALLENGES)
+        
+        # Get total submissions
+        cursor.execute("SELECT COUNT(*) FROM user_submissions")
+        total_submissions = cursor.fetchone()[0]
+        
+        return AdminStats(
+            total_users=total_users,
+            total_challenges=total_challenges,
+            total_submissions=total_submissions
+        )
+    finally:
+        conn.close()
+
+@app.get("/admin/users")
+def get_user_stats(admin_email: str = Depends(verify_admin_token)):
+    """Get detailed user statistics"""
+    conn = sqlite3.connect(get_database_path())
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            SELECT 
+                u.id,
+                u.email,
+                u.created_at,
+                COALESCE(attempts.total_attempts, 0) as total_attempts,
+                COALESCE(solved.challenges_solved, 0) as challenges_solved,
+                COALESCE(last_activity.last_activity, u.created_at) as last_activity
+            FROM users u
+            LEFT JOIN (
+                SELECT user_id, COUNT(*) as total_attempts
+                FROM user_submissions
+                GROUP BY user_id
+            ) attempts ON u.id = attempts.user_id
+            LEFT JOIN (
+                SELECT user_id, COUNT(*) as challenges_solved
+                FROM user_progress
+                WHERE solved_at IS NOT NULL
+                GROUP BY user_id
+            ) solved ON u.id = solved.user_id
+            LEFT JOIN (
+                SELECT user_id, MAX(submitted_at) as last_activity
+                FROM user_submissions
+                GROUP BY user_id
+            ) last_activity ON u.id = last_activity.user_id
+            ORDER BY u.created_at DESC
+        """)
+        
+        users = []
+        for row in cursor.fetchall():
+            users.append(UserStats(
+                id=row[0],
+                email=row[1],
+                created_at=row[2],
+                total_attempts=row[3],
+                challenges_solved=row[4],
+                last_activity=row[5]
+            ))
+        
+        return {"users": users}
+    finally:
+        conn.close()
+
+@app.get("/admin/user/{user_id}/details")
+def get_user_details(user_id: int, admin_email: str = Depends(verify_admin_token)):
+    """Get detailed information about a specific user"""
+    conn = sqlite3.connect(get_database_path())
+    cursor = conn.cursor()
+    try:
+        # Get user info
+        cursor.execute("SELECT id, email, created_at FROM users WHERE id = ?", (user_id,))
+        user = cursor.fetchone()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Get user progress
+        cursor.execute("""
+            SELECT challenge_id, attempts, solved_at
+            FROM user_progress
+            WHERE user_id = ?
+            ORDER BY solved_at DESC, challenge_id
+        """, (user_id,))
+        
+        progress = cursor.fetchall()
+        
+        # Get recent submissions
+        cursor.execute("""
+            SELECT challenge_id, query, passed, submitted_at
+            FROM user_submissions
+            WHERE user_id = ?
+            ORDER BY submitted_at DESC
+            LIMIT 10
+        """, (user_id,))
+        
+        recent_submissions = cursor.fetchall()
+        
+        return {
+            "user": {
+                "id": user[0],
+                "email": user[1],
+                "created_at": user[2]
+            },
+            "progress": [
+                {
+                    "challenge_id": p[0],
+                    "attempts": p[1],
+                    "solved_at": p[2],
+                    "challenge_name": next((c["name"] for c in CHALLENGES if c["id"] == p[0]), f"Challenge {p[0]}"),
+                    "challenge_level": next((c["level"] for c in CHALLENGES if c["id"] == p[0]), "Unknown")
+                } for p in progress
+            ],
+            "recent_submissions": [
+                {
+                    "challenge_id": s[0],
+                    "query": s[1],
+                    "passed": s[2],
+                    "submitted_at": s[3]
+                } for s in recent_submissions
+            ]
+        }
+    finally:
+        conn.close()
