@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 
@@ -25,11 +25,7 @@ export default function AdminPage() {
   const [error, setError] = useState("");
   const router = useRouter();
 
-  useEffect(() => {
-    fetchAdminData();
-  }, []);
-
-  const fetchAdminData = async () => {
+  const fetchAdminData = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
       if (!token) {
@@ -47,10 +43,11 @@ export default function AdminPage() {
 
       setStats(statsRes.data);
       setUsers(usersRes.data.users);
-    } catch (err: any) {
-      if (err.response?.status === 403) {
+    } catch (err: unknown) {
+      const error = err as { response?: { status?: number } };
+      if (error.response?.status === 403) {
         setError("Admin access required");
-      } else if (err.response?.status === 401) {
+      } else if (error.response?.status === 401) {
         router.push("/landing");
       } else {
         setError("Failed to load admin data");
@@ -58,7 +55,11 @@ export default function AdminPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    fetchAdminData();
+  }, [fetchAdminData]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
