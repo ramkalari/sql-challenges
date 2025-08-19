@@ -1018,26 +1018,24 @@ def get_user_stats(admin_email: str = Depends(verify_admin_token)):
                 u.id,
                 u.email,
                 u.created_at,
-                COALESCE(attempts.total_attempts, 0) as total_attempts,
+                COALESCE(submissions.total_attempts, 0) as total_attempts,
                 COALESCE(solved.challenges_solved, 0) as challenges_solved,
-                COALESCE(last_activity.last_activity, u.created_at) as last_activity
+                COALESCE(submissions.last_activity, u.created_at) as last_activity
             FROM users u
             LEFT JOIN (
-                SELECT user_id, COUNT(*) as total_attempts
+                SELECT 
+                    user_id, 
+                    COUNT(*) as total_attempts,
+                    MAX(submitted_at) as last_activity
                 FROM user_submissions
                 GROUP BY user_id
-            ) attempts ON u.id = attempts.user_id
+            ) submissions ON u.id = submissions.user_id
             LEFT JOIN (
                 SELECT user_id, COUNT(*) as challenges_solved
                 FROM user_progress
                 WHERE solved_at IS NOT NULL
                 GROUP BY user_id
             ) solved ON u.id = solved.user_id
-            LEFT JOIN (
-                SELECT user_id, MAX(submitted_at) as last_activity
-                FROM user_submissions
-                GROUP BY user_id
-            ) last_activity ON u.id = last_activity.user_id
             ORDER BY u.created_at DESC
         """)
         
