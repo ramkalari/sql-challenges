@@ -218,7 +218,7 @@ INSERT INTO users VALUES (3, 'charlie');
         "id": 10,
         "name": "Unique Countries",
         "level": "Basic",
-        "question": "Write a query to list all the unique countries where customers are from.\n\nReturn columns: country (use DISTINCT)",
+        "question": "Write a query to list all the unique countries where customers are from.\n\nReturn columns: country",
         "schema_sql": """
 CREATE TABLE customers (
   id INTEGER PRIMARY KEY,
@@ -243,7 +243,7 @@ INSERT INTO customers VALUES (4, 'Alice', 'USA');
         "id": 11,
         "name": "Join Orders and Customers",
         "level": "Intermediate",
-        "question": "Write a query to list all orders with the customer's name.\n\nReturn columns: order_id, customer_name, amount (use JOIN)",
+        "question": "Write a query to list all orders with the customer's name.\n\nReturn columns: order_id, customer_name, amount",
         "schema_sql": """
 CREATE TABLE customers (
   id INTEGER PRIMARY KEY,
@@ -273,7 +273,7 @@ INSERT INTO orders VALUES (2, 2, 'Mouse');
         "id": 12,
         "name": "Total Spent by Customer",
         "level": "Intermediate",
-        "question": "Write a query to find the total amount spent by each customer.\n\nReturn columns: name, total_amount (use SUM and GROUP BY)",
+        "question": "Write a query to find the total amount spent by each customer.\n\nReturn columns: name, total_amount",
         "schema_sql": """
 CREATE TABLE customers (
   id INTEGER PRIMARY KEY,
@@ -303,7 +303,7 @@ INSERT INTO orders VALUES (3, 2, 150);
         "id": 13,
         "name": "Products Not Ordered",
         "level": "Intermediate",
-        "question": "Write a query to find all products that have never been ordered.\n\nReturn columns: name (use LEFT JOIN or NOT EXISTS)",
+        "question": "Write a query to find all products that have never been ordered.\n\nReturn columns: name",
         "schema_sql": """
 CREATE TABLE products (
   id INTEGER PRIMARY KEY,
@@ -332,7 +332,7 @@ INSERT INTO order_items VALUES (2, 2, 5);
         "id": 14,
         "name": "Employees in Departments",
         "level": "Intermediate",
-        "question": "Write a query to list all employees and their respective department names.\n\nReturn columns: employee_name, department_name (use JOIN)",
+        "question": "Write a query to list all employees and their respective department names.\n\nReturn columns: employee_name, department_name",
         "schema_sql": """
 CREATE TABLE departments (
   id INTEGER PRIMARY KEY,
@@ -363,7 +363,7 @@ INSERT INTO employees VALUES (3, 'Charlie', 1);
         "id": 15,
         "name": "Departments with More Than 1 Employee",
         "level": "Intermediate",
-        "question": "Write a query to find departments with more than one employee.\n\nReturn columns: department_name (use GROUP BY and HAVING)",
+        "question": "Write a query to find departments with more than one employee.\n\nReturn columns: department_name",
         "schema_sql": """
 CREATE TABLE departments (
   id INTEGER PRIMARY KEY,
@@ -418,7 +418,7 @@ INSERT INTO sales VALUES (4, 'Apr', 1800);
         "id": 17,
         "name": "Rank Employees by Salary",
         "level": "Advanced",
-        "question": "Write a query to rank employees by salary within their department using window functions.\n\nReturn columns: name, department_id, salary, rank (use RANK() OVER())",
+        "question": "Write a query to rank employees by salary within their department using window functions.\n\nReturn columns: name, department_id, salary, rank",
         "schema_sql": """
 CREATE TABLE employees (
   id INTEGER PRIMARY KEY,
