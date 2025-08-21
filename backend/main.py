@@ -640,6 +640,37 @@ def calculate_leaderboard():
     finally:
         conn.close()
 
+def reset_all_attempts_to_one():
+    """Reset all user attempts to 1 for fairness since error reporting wasn't working before"""
+    conn = sqlite3.connect(get_database_path())
+    cursor = conn.cursor()
+    
+    try:
+        # Start transaction
+        conn.execute("BEGIN TRANSACTION")
+        
+        # Update all user_progress records to have 1 attempt
+        cursor.execute("""
+            UPDATE user_progress 
+            SET attempts = 1
+            WHERE attempts > 1
+        """)
+        
+        rows_affected = cursor.rowcount
+        print(f"Reset {rows_affected} records to 1 attempt")
+        
+        # Commit transaction
+        conn.commit()
+        return rows_affected
+        
+    except Exception as e:
+        # Rollback transaction on error
+        conn.rollback()
+        print(f"Error resetting attempts: {e}")
+        raise e
+    finally:
+        conn.close()
+
 def parse_table_schema(schema_sql: str):
     """Parse CREATE TABLE SQL and return structured schema data"""
     tables = []
@@ -1202,3 +1233,15 @@ def get_leaderboard():
         return {"leaderboard": leaderboard}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to calculate leaderboard: {str(e)}")
+
+@app.post("/admin/reset-attempts")
+def reset_user_attempts(admin_email: str = Depends(verify_admin_token)):
+    """Reset all user attempts to 1 for fairness (one-time migration)"""
+    try:
+        rows_affected = reset_all_attempts_to_one()
+        return {
+            "message": f"Successfully reset {rows_affected} user progress records to 1 attempt",
+            "rows_affected": rows_affected
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to reset attempts: {str(e)}")

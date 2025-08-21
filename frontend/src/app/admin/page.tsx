@@ -18,11 +18,22 @@ interface UserStats {
   last_activity: string;
 }
 
+interface ApiError {
+  response?: {
+    status: number;
+    data?: {
+      detail?: string;
+    };
+  };
+}
+
 export default function AdminPage() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [users, setUsers] = useState<UserStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [resetting, setResetting] = useState(false);
+  const [resetMessage, setResetMessage] = useState("");
   const router = useRouter();
 
   const fetchAdminData = useCallback(async () => {
@@ -33,29 +44,61 @@ export default function AdminPage() {
         return;
       }
 
-      const headers = { Authorization: `Bearer ${token}` };
+      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
-      // Fetch stats and users in parallel
       const [statsRes, usersRes] = await Promise.all([
-        axios.get(`${process.env.NEXT_PUBLIC_API_URL}/admin/stats`, { headers }),
-        axios.get(`${process.env.NEXT_PUBLIC_API_URL}/admin/users`, { headers })
+        axios.get(`${process.env.NEXT_PUBLIC_API_URL}/admin/stats`),
+        axios.get(`${process.env.NEXT_PUBLIC_API_URL}/admin/users`)
       ]);
 
       setStats(statsRes.data);
       setUsers(usersRes.data.users);
     } catch (err: unknown) {
       const error = err as { response?: { status?: number } };
-      if (error.response?.status === 403) {
-        setError("Admin access required");
-      } else if (error.response?.status === 401) {
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("userEmail");
         router.push("/landing");
       } else {
-        setError("Failed to load admin data");
+        setError("Failed to load admin data.");
       }
     } finally {
       setLoading(false);
     }
   }, [router]);
+
+  const handleResetAttempts = async () => {
+    if (!confirm("Are you sure you want to reset all user attempts to 1? This cannot be undone.")) {
+      return;
+    }
+
+    setResetting(true);
+    setResetMessage("");
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        router.push("/landing");
+        return;
+      }
+
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/admin/reset-attempts`);
+      setResetMessage(`Success: ${response.data.message}`);
+      
+      // Refresh the data to show updated stats
+      fetchAdminData();
+         } catch (err: unknown) {
+       const error = err as ApiError;
+       if (error.response?.status === 401 || error.response?.status === 403) {
+         localStorage.removeItem("token");
+         localStorage.removeItem("userEmail");
+         router.push("/landing");
+       } else {
+         setResetMessage(`Error: ${error.response?.data?.detail || "Failed to reset attempts"}`);
+       }
+    } finally {
+      setResetting(false);
+    }
+  };
 
   useEffect(() => {
     fetchAdminData();
@@ -194,6 +237,40 @@ export default function AdminPage() {
             </div>
           </div>
         )}
+
+        {/* Reset Attempts Section */}
+        <div className="bg-white shadow sm:rounded-md mb-6">
+          <div className="px-4 py-5 sm:px-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="text-lg leading-6 font-medium text-gray-900">Reset User Attempts</h3>
+                <p className="mt-1 max-w-2xl text-sm text-gray-500">
+                  Reset all user attempts to 1 for fairness (since error reporting wasn&apos;t working before)
+                </p>
+              </div>
+              <button
+                onClick={handleResetAttempts}
+                disabled={resetting}
+                className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white ${
+                  resetting 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500'
+                }`}
+              >
+                {resetting ? 'Resetting...' : 'Reset All Attempts'}
+              </button>
+            </div>
+            {resetMessage && (
+              <div className={`mt-4 p-3 rounded-md ${
+                resetMessage.startsWith('Success') 
+                  ? 'bg-green-50 text-green-700 border border-green-200' 
+                  : 'bg-red-50 text-red-700 border border-red-200'
+              }`}>
+                {resetMessage}
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* Users Table */}
         <div className="bg-white shadow overflow-hidden sm:rounded-md">
