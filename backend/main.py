@@ -169,6 +169,15 @@ class UserStats(BaseModel):
     challenges_solved: int
     last_activity: str
 
+class LeaderboardEntry(BaseModel):
+    rank: int
+    email: str
+    total_score: int
+    challenges_solved: int
+    total_attempts: int
+    efficiency_rate: float
+    last_solved: str
+
 # Authentication functions
 def create_access_token(data: dict):
     to_encode = data.copy()
@@ -561,6 +570,73 @@ def get_user_submissions(user_id: int, challenge_id: int = None):
                 ORDER BY submitted_at DESC
             """, (user_id,))
         return cursor.fetchall()
+    finally:
+        conn.close()
+
+def calculate_leaderboard():
+    """Calculate leaderboard with scoring based on challenge difficulty and efficiency"""
+    conn = sqlite3.connect(get_database_path())
+    cursor = conn.cursor()
+    
+    try:
+        # Get all users with their progress
+        cursor.execute("""
+            SELECT 
+                u.id,
+                u.email,
+                COUNT(CASE WHEN up.solved_at IS NOT NULL THEN 1 END) as challenges_solved,
+                COALESCE(SUM(up.attempts), 0) as total_attempts,
+                MAX(up.solved_at) as last_solved
+            FROM users u
+            LEFT JOIN user_progress up ON u.id = up.user_id
+            GROUP BY u.id, u.email
+            HAVING challenges_solved > 0
+            ORDER BY challenges_solved DESC, total_attempts ASC
+        """)
+        
+        users_data = cursor.fetchall()
+        leaderboard = []
+        
+        # Score calculation constants
+        LEVEL_POINTS = {"Basic": 10, "Intermediate": 20, "Advanced": 30}
+        
+        for rank, (user_id, email, challenges_solved, total_attempts, last_solved) in enumerate(users_data, 1):
+            # Calculate base score from solved challenges
+            cursor.execute("""
+                SELECT challenge_id, attempts 
+                FROM user_progress 
+                WHERE user_id = ? AND solved_at IS NOT NULL
+            """, (user_id,))
+            
+            solved_challenges = cursor.fetchall()
+            total_score = 0
+            
+            for challenge_id, attempts in solved_challenges:
+                # Find challenge level
+                challenge = next((c for c in CHALLENGES if c["id"] == challenge_id), None)
+                if challenge:
+                    base_points = LEVEL_POINTS.get(challenge["level"], 10)
+                    
+                    # Efficiency bonus: max 50% bonus for solving in 1 attempt
+                    efficiency_multiplier = max(0.5, 2.0 - (attempts * 0.5))
+                    challenge_score = base_points * efficiency_multiplier
+                    total_score += challenge_score
+            
+            # Calculate efficiency rate
+            efficiency_rate = (challenges_solved / total_attempts * 100) if total_attempts > 0 else 0
+            
+            leaderboard.append(LeaderboardEntry(
+                rank=rank,
+                email=email,
+                total_score=int(total_score),
+                challenges_solved=challenges_solved,
+                total_attempts=total_attempts,
+                efficiency_rate=round(efficiency_rate, 1),
+                last_solved=last_solved or ""
+            ))
+        
+        return leaderboard
+        
     finally:
         conn.close()
 
@@ -978,8 +1054,12 @@ def submit_query(challenge_id: int, req: ChallengeSubmitRequest, email: str = De
         else:
             raise HTTPException(status_code=400, detail=result.get("error", "Query execution failed"))
 
+    except HTTPException:
+        # Re-raise HTTPExceptions as-is (don't wrap them)
+        raise
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        # Handle other unexpected exceptions
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 # Admin endpoints
 @app.get("/admin/stats")
@@ -1113,3 +1193,12 @@ def get_user_details(user_id: int, admin_email: str = Depends(verify_admin_token
         }
     finally:
         conn.close()
+
+@app.get("/leaderboard")
+def get_leaderboard():
+    """Get the leaderboard showing top users by score"""
+    try:
+        leaderboard = calculate_leaderboard()
+        return {"leaderboard": leaderboard}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to calculate leaderboard: {str(e)}")

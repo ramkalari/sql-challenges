@@ -289,6 +289,12 @@ export default function ChallengesPage() {
               <div className="flex items-center space-x-2 sm:space-x-4">
                 <span className="text-sm text-gray-600 hidden sm:block">Welcome, {userEmail}</span>
                 <button
+                  onClick={() => router.push("/leaderboard")}
+                  className="px-3 sm:px-4 py-2 text-sm font-medium text-purple-600 hover:text-purple-700"
+                >
+                  🏆 Leaderboard
+                </button>
+                <button
                   onClick={() => router.push("/profile")}
                   className="px-3 sm:px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700"
                 >
