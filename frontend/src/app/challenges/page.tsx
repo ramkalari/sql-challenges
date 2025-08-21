@@ -375,7 +375,13 @@ export default function ChallengesPage() {
                 
                 <div className="mb-4 sm:mb-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-3">Question</h3>
-                  <p className="text-gray-700 bg-gray-50 p-3 sm:p-4 rounded-lg text-sm sm:text-base">{selectedChallenge.question}</p>
+                  <div className="text-gray-700 bg-gray-50 p-3 sm:p-4 rounded-lg text-sm sm:text-base">
+                    {selectedChallenge.question.split('\n').map((line, index) => (
+                      <p key={index} className={line.startsWith('Return columns:') ? 'font-semibold text-blue-700 mt-2' : ''}>
+                        {line}
+                      </p>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="mb-4 sm:mb-6">
