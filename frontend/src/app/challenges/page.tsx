@@ -148,11 +148,13 @@ export default function ChallengesPage() {
           )
         );
         
-        // Update progress stats
-        setProgressStats(prev => ({
-          solved: prev.solved + 1,
-          total: prev.total
-        }));
+        // Update progress stats only if challenge wasn't already solved
+        if (!selectedChallenge.solved) {
+          setProgressStats(prev => ({
+            solved: prev.solved + 1,
+            total: prev.total
+          }));
+        }
       } else {
         // Update attempts count even for failed submissions
         setChallenges(prevChallenges => 
