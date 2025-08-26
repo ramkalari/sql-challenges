@@ -1017,21 +1017,51 @@ def get_next_challenge_endpoint(email: str = Depends(verify_token)):
     return {"next_challenge": next_challenge}
 
 @app.get("/challenges/{challenge_id}")
-def get_challenge(challenge_id: int):
+def get_challenge(challenge_id: int, email: str = Depends(verify_token)):
     challenge = next((c for c in CHALLENGES if c["id"] == challenge_id), None)
     if not challenge:
         raise HTTPException(status_code=404, detail="Challenge not found")
     
+    # Get user progress for this specific challenge
+    user_id = get_user_id(email)
+    solved = False
+    solved_at = None
+    attempts = 0
+    
+    if user_id:
+        conn = sqlite3.connect(get_database_path())
+        cursor = conn.cursor()
+        try:
+            cursor.execute("""
+                SELECT solved_at, attempts 
+                FROM user_progress 
+                WHERE user_id = ? AND challenge_id = ?
+            """, (user_id, challenge_id))
+            result = cursor.fetchone()
+            
+            if result:
+                solved_at, attempts = result
+                solved = solved_at is not None
+        finally:
+            conn.close()
+    
     # Parse the schema SQL into structured data
     schema_tables = parse_table_schema(challenge["schema_sql"])
     
-    return {
+    # Include solved status and attempts
+    challenge_data = {
         "id": challenge["id"], 
         "name": challenge["name"], 
         "question": challenge["question"], 
         "schema_tables": schema_tables,
         "level": challenge["level"]
     }
+    
+    challenge_data["solved"] = solved
+    challenge_data["solved_at"] = solved_at
+    challenge_data["attempts"] = attempts
+    
+    return challenge_data
 
 @app.get("/challenges/next")
 def get_next_challenge_endpoint(email: str = Depends(verify_token)):
