@@ -243,7 +243,7 @@ INSERT INTO customers VALUES (4, 'Alice', 'USA');
         "id": 11,
         "name": "Join Orders and Customers",
         "level": "Intermediate",
-        "question": "Write a query to list all orders with the customer's name.\n\nReturn columns: order_id, customer_name, amount",
+        "question": "Write a query to list all orders with the customer's name.\n\nReturn columns: order_id, customer_name",
         "schema_sql": """
 CREATE TABLE customers (
   id INTEGER PRIMARY KEY,
@@ -392,7 +392,7 @@ INSERT INTO employees VALUES (3, 'Charlie', 1);
         "id": 16,
         "name": "Running Total with Window Functions",
         "level": "Advanced",
-        "question": "Write a query to calculate the running total of sales for each month using window functions.",
+        "question": "Write a query to calculate the running total of sales for each month using window functions.\n\nReturn columns: month, amount, running_total",
         "schema_sql": """
 CREATE TABLE sales (
   id INTEGER PRIMARY KEY,
@@ -560,7 +560,7 @@ INSERT INTO employees VALUES (5, 'Eve', 'Engineering', 90000);
         "id": 22,
         "name": "Multiple Window Functions",
         "level": "Advanced",
-        "question": "Write a query to calculate both the running total and the percentage of total sales for each month using multiple window functions.",
+        "question": "Write a query to calculate both the running total and the percentage of total sales for each month using multiple window functions.\n\nReturn columns: month, amount, running_total, percentage",
         "schema_sql": """
 CREATE TABLE sales (
   id INTEGER PRIMARY KEY,
