@@ -478,7 +478,7 @@ INSERT INTO employees VALUES (6, 'Employee 3', 3);
         "id": 19,
         "name": "Pivot Table - Sales by Product and Region",
         "level": "Advanced",
-        "question": "Write a query to create a pivot table showing sales amounts by product and region using conditional aggregation.\n\nReturn columns: product, north, south",
+        "question": "Write a query to create a pivot table showing sales amounts by product and region using conditional aggregation. Order the results by product name alphabetically.\n\nReturn columns: product, north, south",
         "schema_sql": """
 CREATE TABLE sales (
   id INTEGER PRIMARY KEY,
@@ -497,9 +497,9 @@ INSERT INTO sales VALUES (6, 'Keyboard', 'South', 400);
 """,
         "expected_column_names": ["product", "north", "south"],
         "expected_output": [
+            ['Keyboard', '300', '400'],
             ['Laptop', '1000', '1200'],
-            ['Mouse', '500', '600'],
-            ['Keyboard', '300', '400']
+            ['Mouse', '500', '600']
         ]
     },
     {
