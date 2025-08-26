@@ -613,7 +613,7 @@ INSERT INTO employees VALUES (6, 'Frank', 'Sales', 85000);
         "id": 24,
         "name": "Date Functions and Intervals",
         "level": "Advanced",
-        "question": "Write a query to find all orders placed in the last 30 days and calculate the days since each order was placed.",
+        "question": "Write a query to find all orders placed in the last 30 days from 2024-01-30 and calculate the days since each order was placed (as of 2024-01-30). Order results by order_date.\n\nReturn columns: customer_name, order_date, amount, days_ago",
         "schema_sql": """
 CREATE TABLE orders (
   id INTEGER PRIMARY KEY,
