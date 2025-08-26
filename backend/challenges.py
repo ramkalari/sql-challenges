@@ -526,7 +526,7 @@ INSERT INTO products VALUES (6, 'Book B', 'Books', 25);
         "expected_column_names": ["name", "category", "price"],
         "expected_output": [
             ['Laptop A', 'Electronics', '1200'],
-            ['Mouse A', 'Electronics', '50'],
+            ['Laptop B', 'Electronics', '1000'],
             ['Book B', 'Books', '25']
         ]
     },
