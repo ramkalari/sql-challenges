@@ -641,7 +641,7 @@ INSERT INTO orders VALUES (5, 'Eve', '2024-01-30', 250);
         "id": 25,
         "name": "Complex Aggregation with CASE",
         "level": "Advanced",
-        "question": "Write a query to categorize sales by amount ranges and count the number of sales in each range.",
+        "question": "Write a query to categorize sales by amount ranges and count the number of sales in each range. Use the following ranges: 0-200, 201-500, 501-1000, 1000+. Order results by range (low to high).\n\nReturn columns: range, count",
         "schema_sql": """
 CREATE TABLE sales (
   id INTEGER PRIMARY KEY,
