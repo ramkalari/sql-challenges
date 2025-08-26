@@ -506,7 +506,7 @@ INSERT INTO sales VALUES (6, 'Keyboard', 'South', 400);
         "id": 20,
         "name": "Complex Subquery - Products Above Average Price",
         "level": "Advanced",
-        "question": "Write a query to find all products with prices above the average price of all products in their category.",
+        "question": "Write a query to find all products with prices above the average price of all products in their category.\n\nReturn columns: name, category, price",
         "schema_sql": """
 CREATE TABLE products (
   id INTEGER PRIMARY KEY,
