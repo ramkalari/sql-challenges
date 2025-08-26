@@ -437,7 +437,7 @@ export default function ChallengesPage() {
                     
                     <div className="grid grid-cols-1 gap-4 sm:gap-6">
                       {renderResultTable(result.result || [], "Your Result", result.column_names)}
-                      {!result.passed && renderResultTable(result.expected || [], "Expected Result", result.expected_column_names)}
+                      {renderResultTable(result.expected || [], "Expected Result", result.expected_column_names)}
                     </div>
                   </div>
                 )}

@@ -584,11 +584,11 @@ def calculate_leaderboard():
             SELECT 
                 u.id,
                 u.email,
-                COUNT(CASE WHEN up.solved_at IS NOT NULL THEN 1 END) as challenges_solved,
-                COALESCE(SUM(up.attempts), 0) as total_attempts,
+                COUNT(up.solved_at) as challenges_solved,
+                SUM(up.attempts) as total_attempts,
                 MAX(up.solved_at) as last_solved
             FROM users u
-            LEFT JOIN user_progress up ON u.id = up.user_id
+            INNER JOIN user_progress up ON u.id = up.user_id
             GROUP BY u.id, u.email
             HAVING challenges_solved > 0
             ORDER BY challenges_solved DESC, total_attempts ASC
@@ -1072,6 +1072,8 @@ def submit_query(challenge_id: int, req: ChallengeSubmitRequest, email: str = De
                     "passed": True, 
                     "result": result.get("results", []), 
                     "column_names": result.get("columns", []),
+                    "expected": challenge["expected_output"], 
+                    "expected_column_names": challenge.get("expected_column_names", []),
                     "next_challenge": next_challenge
                 }
             else:

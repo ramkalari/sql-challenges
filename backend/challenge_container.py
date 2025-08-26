@@ -69,7 +69,8 @@ class ChallengeContainer:
             cursor.execute(user_query)
             
             # Get results
-            if user_query.strip().upper().startswith("SELECT"):
+            query_upper = user_query.strip().upper()
+            if query_upper.startswith("SELECT") or query_upper.startswith("WITH"):
                 results = cursor.fetchall()
                 columns = [description[0] for description in cursor.description] if cursor.description else []
                 

@@ -447,7 +447,7 @@ INSERT INTO employees VALUES (5, 'Eve', 'Engineering', 85000);
         "id": 18,
         "name": "Recursive CTE - Employee Hierarchy",
         "level": "Advanced",
-        "question": "Write a query using a recursive CTE to find all employees and their managers in a hierarchical structure.",
+        "question": "Write a query using a recursive CTE to find all employees and their managers in a hierarchical structure.\n\nReturn columns: employee_name, manager_name, level",
         "schema_sql": """
 CREATE TABLE employees (
   id INTEGER PRIMARY KEY,
