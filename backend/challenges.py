@@ -478,7 +478,7 @@ INSERT INTO employees VALUES (6, 'Employee 3', 3);
         "id": 19,
         "name": "Pivot Table - Sales by Product and Region",
         "level": "Advanced",
-        "question": "Write a query to create a pivot table showing sales amounts by product and region using conditional aggregation.",
+        "question": "Write a query to create a pivot table showing sales amounts by product and region using conditional aggregation.\n\nReturn columns: product, north, south",
         "schema_sql": """
 CREATE TABLE sales (
   id INTEGER PRIMARY KEY,
@@ -534,7 +534,7 @@ INSERT INTO products VALUES (6, 'Book B', 'Books', 25);
         "id": 21,
         "name": "Self-Join - Employee Pairs",
         "level": "Advanced",
-        "question": "Write a query to find all pairs of employees who work in the same department and have the same salary.",
+        "question": "Write a query to find all pairs of employees who work in the same department and have the same salary.\n\nReturn columns: employee1, employee2, department, salary",
         "schema_sql": """
 CREATE TABLE employees (
   id INTEGER PRIMARY KEY,
@@ -586,7 +586,7 @@ INSERT INTO sales VALUES (4, 'Apr', 1800);
         "id": 23,
         "name": "Correlated Subquery - Top Performers",
         "level": "Advanced",
-        "question": "Write a query to find employees who earn more than the average salary in their department using a correlated subquery.",
+        "question": "Write a query to find employees who earn more than the average salary in their department using a correlated subquery.\n\nReturn columns: name, department, salary",
         "schema_sql": """
 CREATE TABLE employees (
   id INTEGER PRIMARY KEY,
