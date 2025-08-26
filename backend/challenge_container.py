@@ -147,11 +147,12 @@ class ChallengeManager:
         expected_output = challenge.get("expected_output", [])
         
         # Simple validation - check if results match expected
-        if "results" in result:
+        if "results" in result and result["results"] is not None:
             user_results = result["results"]
             return user_results == expected_output
         
-        return True
+        # If no results or results is None, it definitely doesn't match expected output
+        return False
 
 # Global challenge manager instance
 challenge_manager = ChallengeManager() 
