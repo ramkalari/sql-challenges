@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 
@@ -54,6 +54,7 @@ export default function ChallengesPage() {
   const [userEmail, setUserEmail] = useState("");
   const [progressStats, setProgressStats] = useState({ solved: 0, total: 0 });
   const router = useRouter();
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Check if user is authenticated
@@ -92,6 +93,16 @@ export default function ChallengesPage() {
     };
     fetchChallenges();
   }, [router]);
+
+  // Auto-scroll to results/error section when they appear
+  useEffect(() => {
+    if (result || error) {
+      resultsRef.current?.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start' 
+      });
+    }
+  }, [result, error]);
 
   const handleSelectChallenge = async (id: number) => {
     try {
@@ -408,14 +419,15 @@ export default function ChallengesPage() {
                   Run Query
                 </button>
 
-                {error && (
-                  <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
-                    <p className="text-red-600 text-sm">{error}</p>
-                  </div>
-                )}
+                <div ref={resultsRef}>
+                  {error && (
+                    <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
+                      <p className="text-red-600 text-sm">{error}</p>
+                    </div>
+                  )}
 
-                {result && (
-                  <div className="mt-6">
+                  {result && (
+                    <div className="mt-6">
                     <div className="mb-4 flex items-center justify-between">
                       <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
                         result.passed 
@@ -441,6 +453,7 @@ export default function ChallengesPage() {
                     </div>
                   </div>
                 )}
+                </div>
               </div>
             ) : (
               <div className="bg-white rounded-lg shadow-sm border p-8 sm:p-12 text-center">
