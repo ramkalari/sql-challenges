@@ -15,6 +15,7 @@ from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta, timezone
 from challenges import CHALLENGES
 from challenge_container import challenge_manager
+from duckdb_container import duckdb_challenge_manager
 
 app = FastAPI()
 security = HTTPBearer()
@@ -148,6 +149,7 @@ class UserLogin(BaseModel):
 
 class ChallengeSubmitRequest(BaseModel):
     user_query: str
+    database_type: str = "sqlite"  # "sqlite" or "duckdb"
 
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr
@@ -1088,8 +1090,12 @@ def submit_query(challenge_id: int, req: ChallengeSubmitRequest, email: str = De
         if not user_id:
             raise HTTPException(status_code=404, detail="User not found")
         
-        # Execute query in isolated container environment
-        result = challenge_manager.execute_challenge(challenge_id, str(user_id), req.user_query)
+        # Execute query in isolated container environment based on database type
+        if req.database_type.lower() == "duckdb":
+            result = duckdb_challenge_manager.execute_challenge(challenge_id, str(user_id), req.user_query)
+        else:
+            # Default to SQLite
+            result = challenge_manager.execute_challenge(challenge_id, str(user_id), req.user_query)
         
         # Record submission and progress in a single transaction
         record_submission_and_progress(user_id, challenge_id, req.user_query, result.get("passed", False))

@@ -53,6 +53,7 @@ export default function ChallengesPage() {
   const [error, setError] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [progressStats, setProgressStats] = useState({ solved: 0, total: 0 });
+  const [databaseType, setDatabaseType] = useState("sqlite");
   const router = useRouter();
   const resultsRef = useRef<HTMLDivElement>(null);
 
@@ -130,6 +131,7 @@ export default function ChallengesPage() {
       setError("");
       const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/challenges/${selectedChallenge.id}/submit`, {
         user_query: query,
+        database_type: databaseType,
       });
       setResult(res.data);
       
@@ -402,6 +404,21 @@ export default function ChallengesPage() {
                   <div className="overflow-x-auto">
                     {renderSchemaTable(selectedChallenge.schema_tables)}
                   </div>
+                </div>
+
+                <div className="mb-4 sm:mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Database Engine</h3>
+                  <select
+                    value={databaseType}
+                    onChange={(e) => setDatabaseType(e.target.value)}
+                    className="w-full sm:w-auto border border-gray-300 rounded-lg p-3 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                  >
+                    <option value="sqlite">SQLite</option>
+                    <option value="duckdb">DuckDB</option>
+                  </select>
+                  <p className="mt-2 text-sm text-gray-600">
+                    Choose between SQLite (traditional relational) or DuckDB (analytical) database engines.
+                  </p>
                 </div>
 
                 <div className="mb-4 sm:mb-6">
