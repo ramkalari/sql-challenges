@@ -19,6 +19,9 @@ interface Challenge {
       constraints: string[];
     }>;
   }>;
+  // Additional properties for chemistry challenges
+  type?: string;
+  options?: string[];
 }
 
 interface Course {
@@ -49,6 +52,11 @@ interface QueryResult {
     name: string;
     level: string;
   };
+  // Additional properties for chemistry challenges
+  correct_answer?: string;
+  explanation?: string;
+  score?: string;
+  keywords_found?: string[];
 }
 
 interface ApiError {
@@ -363,30 +371,79 @@ export default function CoursePage() {
                   </div>
                 </div>
 
-                <div className="mb-4 sm:mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Database Engine</h3>
-                  <select
-                    value={databaseType}
-                    onChange={(e) => setDatabaseType(e.target.value)}
-                    className="w-full sm:w-auto border border-gray-300 rounded-lg p-3 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-                  >
-                    <option value="sqlite">SQLite</option>
-                    <option value="duckdb">DuckDB</option>
-                  </select>
-                  <p className="mt-2 text-sm text-gray-600">
-                    Choose between SQLite (traditional relational) or DuckDB (analytical) database engines.
-                  </p>
-                </div>
+{/* Render input based on challenge type */}
+                {selectedChallenge?.type === 'multiple_choice' ? (
+                  <div className="mb-4 sm:mb-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Choose your answer:</h3>
+                    <div className="space-y-3">
+                      {selectedChallenge.options?.map((option, index) => (
+                        <label key={index} className="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="answer"
+                            value={String.fromCharCode(65 + index)} // A, B, C, D
+                            checked={query === String.fromCharCode(65 + index)}
+                            onChange={(e) => setQuery(e.target.value)}
+                            className="mr-3 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-gray-900">
+                            <span className="font-medium">{String.fromCharCode(65 + index)}.</span> {option}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                ) : selectedChallenge?.id >= 101 && selectedChallenge?.id <= 200 ? (
+                  // Other chemistry question types
+                  <div className="mb-4 sm:mb-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Your Answer</h3>
+                    <input
+                      type="text"
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg p-3 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder={
+                        selectedChallenge?.type === 'fill_blank' ? "Fill in the blank..." :
+                        selectedChallenge?.type === 'true_false' ? "Enter True or False" :
+                        selectedChallenge?.type === 'matching' ? "Enter your matches (e.g., 1-c, 2-a, 3-b)" :
+                        "Enter your answer..."
+                      }
+                    />
+                    {selectedChallenge?.type === 'short_answer' && (
+                      <p className="mt-2 text-sm text-gray-600">
+                        Provide a detailed explanation covering the key concepts.
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  // SQL challenges
+                  <>
+                    <div className="mb-4 sm:mb-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-3">Database Engine</h3>
+                      <select
+                        value={databaseType}
+                        onChange={(e) => setDatabaseType(e.target.value)}
+                        className="w-full sm:w-auto border border-gray-300 rounded-lg p-3 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                      >
+                        <option value="sqlite">SQLite</option>
+                        <option value="duckdb">DuckDB</option>
+                      </select>
+                      <p className="mt-2 text-sm text-gray-600">
+                        Choose between SQLite (traditional relational) or DuckDB (analytical) database engines.
+                      </p>
+                    </div>
 
-                <div className="mb-4 sm:mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Your Query</h3>
-                  <textarea
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    className="w-full h-24 sm:h-32 border border-gray-300 rounded-lg p-3 font-mono text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Write your SQL query here..."
-                  />
-                </div>
+                    <div className="mb-4 sm:mb-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-3">Your Query</h3>
+                      <textarea
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        className="w-full h-24 sm:h-32 border border-gray-300 rounded-lg p-3 font-mono text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Write your SQL query here..."
+                      />
+                    </div>
+                  </>
+                )}
 
                 <button
                   onClick={handleSubmit}
@@ -408,7 +465,12 @@ export default function CoursePage() {
                       {result.passed ? (
                         <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
                           <h3 className="text-lg font-semibold text-green-900 mb-2">✅ Correct!</h3>
-                          <p className="text-green-800">Great job! Your query returned the expected results.</p>
+                          <p className="text-green-800">
+                            {selectedChallenge?.id >= 101 && selectedChallenge?.id <= 200 
+                              ? "Excellent work! You got the right answer." 
+                              : "Great job! Your query returned the expected results."
+                            }
+                          </p>
                           {result.next_challenge && (
                             <div className="mt-3">
                               <p className="text-green-700">
@@ -426,68 +488,116 @@ export default function CoursePage() {
                       ) : (
                         <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                           <h3 className="text-lg font-semibold text-yellow-900 mb-2">❌ Not quite right</h3>
-                          <p className="text-yellow-800">Your query ran successfully, but the results don&apos;t match what&apos;s expected. Try again!</p>
+                          <p className="text-yellow-800">
+                            {selectedChallenge?.id >= 101 && selectedChallenge?.id <= 200
+                              ? "That's not correct. Think about the concepts and try again!"
+                              : "Your query ran successfully, but the results don't match what's expected. Try again!"
+                            }
+                          </p>
                         </div>
                       )}
 
-                      {/* Results comparison */}
-                      <div className="grid gap-6 md:grid-cols-2">
-                        <div>
-                          <h4 className="text-md font-semibold text-gray-900 mb-2">Your Results</h4>
-                          <div className="border border-gray-200 rounded-lg overflow-hidden">
-                            <table className="min-w-full divide-y divide-gray-200">
-                              <thead className="bg-gray-50">
-                                <tr>
-                                  {result.column_names.map((col, index) => (
-                                    <th key={index} className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                      {col}
-                                    </th>
-                                  ))}
-                                </tr>
-                              </thead>
-                              <tbody className="bg-white divide-y divide-gray-200">
-                                {result.result.map((row, rowIndex) => (
-                                  <tr key={rowIndex}>
-                                    {row.map((cell, cellIndex) => (
-                                      <td key={cellIndex} className="px-4 py-2 text-sm text-gray-900">
-                                        {cell}
-                                      </td>
-                                    ))}
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
+                      {/* Results display - different for chemistry vs SQL */}
+                      {selectedChallenge?.id >= 101 && selectedChallenge?.id <= 200 ? (
+                        /* Chemistry challenge results */
+                        <div className="space-y-4">
+                          <div className="grid gap-4 md:grid-cols-2">
+                            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                              <h4 className="text-md font-semibold text-blue-900 mb-2">Your Answer</h4>
+                              <p className="text-blue-800 font-medium">{result.result?.[0]?.[0] || 'No answer provided'}</p>
+                            </div>
+                            <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                              <h4 className="text-md font-semibold text-gray-900 mb-2">Correct Answer</h4>
+                              <p className="text-gray-800 font-medium">{result.correct_answer}</p>
+                            </div>
                           </div>
-                        </div>
+                          
+                          {/* Show explanation */}
+                          <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+                            <h4 className="text-md font-semibold text-indigo-900 mb-2">Explanation</h4>
+                            <p className="text-indigo-800">{result.explanation}</p>
+                          </div>
 
-                        <div>
-                          <h4 className="text-md font-semibold text-gray-900 mb-2">Expected Results</h4>
-                          <div className="border border-gray-200 rounded-lg overflow-hidden">
-                            <table className="min-w-full divide-y divide-gray-200">
-                              <thead className="bg-gray-50">
-                                <tr>
-                                  {result.expected_column_names.map((col, index) => (
-                                    <th key={index} className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                      {col}
-                                    </th>
-                                  ))}
-                                </tr>
-                              </thead>
-                              <tbody className="bg-white divide-y divide-gray-200">
-                                {result.expected.map((row, rowIndex) => (
-                                  <tr key={rowIndex}>
-                                    {row.map((cell, cellIndex) => (
-                                      <td key={cellIndex} className="px-4 py-2 text-sm text-gray-900">
-                                        {cell}
-                                      </td>
+                          {/* Show score for short answers */}
+                          {result.score && (
+                            <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                              <h4 className="text-md font-semibold text-purple-900 mb-2">Score</h4>
+                              <p className="text-purple-800">{result.score}</p>
+                              {result.keywords_found && result.keywords_found.length > 0 && (
+                                <div className="mt-2">
+                                  <p className="text-sm text-purple-700">Key concepts you mentioned:</p>
+                                  <div className="flex flex-wrap gap-2 mt-1">
+                                    {result.keywords_found.map((keyword: string, index: number) => (
+                                      <span key={index} className="inline-block bg-purple-200 text-purple-800 text-xs px-2 py-1 rounded">
+                                        {keyword}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        /* SQL challenge results */
+                        <div className="grid gap-6 md:grid-cols-2">
+                          <div>
+                            <h4 className="text-md font-semibold text-gray-900 mb-2">Your Results</h4>
+                            <div className="border border-gray-200 rounded-lg overflow-hidden">
+                              <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                  <tr>
+                                    {result.column_names?.map((col, index) => (
+                                      <th key={index} className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        {col}
+                                      </th>
                                     ))}
                                   </tr>
-                                ))}
-                              </tbody>
-                            </table>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                  {result.result?.map((row, rowIndex) => (
+                                    <tr key={rowIndex}>
+                                      {row.map((cell, cellIndex) => (
+                                        <td key={cellIndex} className="px-4 py-2 text-sm text-gray-900">
+                                          {cell}
+                                        </td>
+                                      ))}
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+
+                          <div>
+                            <h4 className="text-md font-semibold text-gray-900 mb-2">Expected Results</h4>
+                            <div className="border border-gray-200 rounded-lg overflow-hidden">
+                              <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                  <tr>
+                                    {result.expected_column_names?.map((col, index) => (
+                                      <th key={index} className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        {col}
+                                      </th>
+                                    ))}
+                                  </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                  {result.expected?.map((row, rowIndex) => (
+                                    <tr key={rowIndex}>
+                                      {row.map((cell, cellIndex) => (
+                                        <td key={cellIndex} className="px-4 py-2 text-sm text-gray-900">
+                                          {cell}
+                                        </td>
+                                      ))}
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   )}
                 </div>
