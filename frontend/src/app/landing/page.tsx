@@ -170,7 +170,7 @@ export default function LandingPage() {
               </div>
               <div className="relative flex justify-center text-sm">
                 <span className="px-2 bg-white text-gray-500">
-                  {isSignup ? "Already have an account?" : "Don&apos;t have an account?"}
+                  {isSignup ? "Already have an account?" : "Don't have an account?"}
                 </span>
               </div>
             </div>
