@@ -1,4 +1,5 @@
 from challenges import CHALLENGES
+from atomic_structure_challenges import ATOMIC_STRUCTURE_CHALLENGES
 
 COURSES = [
     {
@@ -17,6 +18,24 @@ COURSES = [
         ],
         "technologies": ["SQL", "SQLite", "DuckDB"],
         "challenge_ids": [c["id"] for c in CHALLENGES],  # All current challenges belong to SQL course
+        "is_available": True
+    },
+    {
+        "id": "atomic-structure",
+        "name": "Atomic Structure (Grade 7)",
+        "description": "Explore the fascinating world of atoms! Learn about atomic structure, electron shells, ions, molecules, and chemical bonding through interactive challenges designed for 7th grade students.",
+        "icon": "⚛️",
+        "difficulty": "Grade 7 Level",
+        "duration": "2-3 weeks",
+        "features": [
+            "20+ interactive challenges",
+            "Multiple question types",
+            "Visual explanations",
+            "Progressive difficulty",
+            "Immediate feedback"
+        ],
+        "technologies": ["Chemistry", "Atomic Theory", "Chemical Bonding"],
+        "challenge_ids": [c["id"] for c in ATOMIC_STRUCTURE_CHALLENGES],
         "is_available": True
     },
     {
@@ -88,6 +107,12 @@ def get_course_challenges(course_id: str):
     if not course:
         return []
     
+    # Get the appropriate challenge set based on course
+    if course_id == "atomic-structure":
+        all_challenges = ATOMIC_STRUCTURE_CHALLENGES
+    else:
+        all_challenges = CHALLENGES
+    
     # Filter challenges by the course's challenge_ids
-    course_challenges = [c for c in CHALLENGES if c["id"] in course["challenge_ids"]]
+    course_challenges = [c for c in all_challenges if c["id"] in course["challenge_ids"]]
     return course_challenges 

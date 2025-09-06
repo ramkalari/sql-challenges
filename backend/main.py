@@ -16,6 +16,7 @@ from datetime import datetime, timedelta, timezone
 from challenges import CHALLENGES
 from challenge_container import challenge_manager
 from duckdb_container import duckdb_challenge_manager
+from atomic_structure_container import atomic_structure_challenge_manager
 from courses import COURSES, get_course_by_id, get_available_courses, get_course_challenges
 
 app = FastAPI()
@@ -1134,7 +1135,13 @@ def get_next_challenge_endpoint(email: str = Depends(verify_token)):
 
 @app.get("/challenges/{challenge_id}")
 def get_challenge(challenge_id: int, email: str = Depends(verify_token)):
-    challenge = next((c for c in CHALLENGES if c["id"] == challenge_id), None)
+    # Check if it's an atomic structure challenge first
+    if challenge_id >= 101 and challenge_id <= 200:
+        from atomic_structure_challenges import ATOMIC_STRUCTURE_CHALLENGES
+        challenge = next((c for c in ATOMIC_STRUCTURE_CHALLENGES if c["id"] == challenge_id), None)
+    else:
+        challenge = next((c for c in CHALLENGES if c["id"] == challenge_id), None)
+        
     if not challenge:
         raise HTTPException(status_code=404, detail="Challenge not found")
     
@@ -1161,17 +1168,31 @@ def get_challenge(challenge_id: int, email: str = Depends(verify_token)):
         finally:
             conn.close()
     
-    # Parse the schema SQL into structured data
-    schema_tables = parse_table_schema(challenge["schema_sql"])
-    
-    # Include solved status and attempts
-    challenge_data = {
-        "id": challenge["id"], 
-        "name": challenge["name"], 
-        "question": challenge["question"], 
-        "schema_tables": schema_tables,
-        "level": challenge["level"]
-    }
+    # Handle different challenge types
+    if challenge_id >= 101 and challenge_id <= 200:
+        # Atomic structure challenge - no schema tables
+        challenge_data = {
+            "id": challenge["id"], 
+            "name": challenge["name"], 
+            "question": challenge["question"], 
+            "level": challenge["level"],
+            "type": challenge.get("type", "multiple_choice"),
+            "schema_tables": []  # No database schema for chemistry challenges
+        }
+        
+        # Add options for multiple choice questions
+        if challenge.get("type") == "multiple_choice" and "options" in challenge:
+            challenge_data["options"] = challenge["options"]
+    else:
+        # SQL challenge - parse the schema SQL into structured data
+        schema_tables = parse_table_schema(challenge["schema_sql"])
+        challenge_data = {
+            "id": challenge["id"], 
+            "name": challenge["name"], 
+            "question": challenge["question"], 
+            "schema_tables": schema_tables,
+            "level": challenge["level"]
+        }
     
     challenge_data["solved"] = solved
     challenge_data["solved_at"] = solved_at
@@ -1204,11 +1225,15 @@ def submit_query(challenge_id: int, req: ChallengeSubmitRequest, email: str = De
         if not user_id:
             raise HTTPException(status_code=404, detail="User not found")
         
-        # Execute query in isolated container environment based on database type
-        if req.database_type.lower() == "duckdb":
+        # Execute query in isolated container environment based on challenge type
+        if challenge_id >= 101 and challenge_id <= 200:
+            # Atomic structure challenges (IDs 101-200)
+            result = atomic_structure_challenge_manager.execute_challenge(challenge_id, str(user_id), req.user_query)
+        elif req.database_type.lower() == "duckdb":
+            # SQL challenges with DuckDB
             result = duckdb_challenge_manager.execute_challenge(challenge_id, str(user_id), req.user_query)
         else:
-            # Default to SQLite
+            # SQL challenges with SQLite (default)
             result = challenge_manager.execute_challenge(challenge_id, str(user_id), req.user_query)
         
         # Record submission and progress in a single transaction
