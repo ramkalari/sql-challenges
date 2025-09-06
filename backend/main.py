@@ -1215,7 +1215,13 @@ def get_next_challenge_endpoint(email: str = Depends(verify_token)):
 
 @app.post("/challenges/{challenge_id}/submit")
 def submit_query(challenge_id: int, req: ChallengeSubmitRequest, email: str = Depends(verify_token)):
-    challenge = next((c for c in CHALLENGES if c["id"] == challenge_id), None)
+    # Check if it's an atomic structure challenge first
+    if challenge_id >= 101 and challenge_id <= 200:
+        from atomic_structure_challenges import ATOMIC_STRUCTURE_CHALLENGES
+        challenge = next((c for c in ATOMIC_STRUCTURE_CHALLENGES if c["id"] == challenge_id), None)
+    else:
+        challenge = next((c for c in CHALLENGES if c["id"] == challenge_id), None)
+        
     if not challenge:
         raise HTTPException(status_code=404, detail="Challenge not found")
 
@@ -1243,22 +1249,54 @@ def submit_query(challenge_id: int, req: ChallengeSubmitRequest, email: str = De
             if result.get("passed", False):
                 # Get next challenge info when current challenge is passed
                 next_challenge = get_next_challenge(user_id)
-                return {
-                    "passed": True, 
-                    "result": result.get("results", []), 
-                    "column_names": result.get("columns", []),
-                    "expected": challenge["expected_output"], 
-                    "expected_column_names": challenge.get("expected_column_names", []),
-                    "next_challenge": next_challenge
-                }
+                
+                # Different response format for chemistry vs SQL challenges
+                if challenge_id >= 101 and challenge_id <= 200:
+                    # Chemistry challenge response
+                    return {
+                        "passed": True,
+                        "result": result.get("results", []),
+                        "column_names": result.get("columns", []),
+                        "correct_answer": result.get("correct_answer", ""),
+                        "explanation": result.get("explanation", ""),
+                        "question_type": result.get("question_type", ""),
+                        "score": result.get("score", ""),
+                        "keywords_found": result.get("keywords_found", []),
+                        "next_challenge": next_challenge
+                    }
+                else:
+                    # SQL challenge response
+                    return {
+                        "passed": True, 
+                        "result": result.get("results", []), 
+                        "column_names": result.get("columns", []),
+                        "expected": challenge["expected_output"], 
+                        "expected_column_names": challenge.get("expected_column_names", []),
+                        "next_challenge": next_challenge
+                    }
             else:
-                return {
-                    "passed": False, 
-                    "result": result.get("results", []), 
-                    "expected": challenge["expected_output"], 
-                    "column_names": result.get("columns", []),
-                    "expected_column_names": challenge.get("expected_column_names", [])
-                }
+                # Different response format for chemistry vs SQL challenges
+                if challenge_id >= 101 and challenge_id <= 200:
+                    # Chemistry challenge response
+                    return {
+                        "passed": False,
+                        "result": result.get("results", []),
+                        "column_names": result.get("columns", []),
+                        "correct_answer": result.get("correct_answer", ""),
+                        "explanation": result.get("explanation", ""),
+                        "question_type": result.get("question_type", ""),
+                        "score": result.get("score", ""),
+                        "keywords_found": result.get("keywords_found", [])
+                    }
+                else:
+                    # SQL challenge response
+                    return {
+                        "passed": False, 
+                        "result": result.get("results", []), 
+                        "expected": challenge["expected_output"], 
+                        "column_names": result.get("columns", []),
+                        "expected_column_names": challenge.get("expected_column_names", [])
+                    }
         else:
             raise HTTPException(status_code=400, detail=result.get("error", "Query execution failed"))
 
