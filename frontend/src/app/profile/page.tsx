@@ -80,8 +80,8 @@ export default function ProfilePage() {
     router.push("/landing");
   };
 
-  const handleBackToChallenges = () => {
-    router.push("/challenges");
+  const handleBackToHome = () => {
+    router.push("/");
   };
 
   const getLevelColor = (level: string) => {
@@ -127,10 +127,10 @@ export default function ProfilePage() {
             <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
               <div className="flex items-center space-x-4">
                 <button
-                  onClick={handleBackToChallenges}
+                  onClick={handleBackToHome}
                   className="text-blue-600 hover:text-blue-700 font-medium text-sm sm:text-base"
                 >
-                  ← Back to Challenges
+                  ← Back to Courses
                 </button>
                 <h1 className="text-xl font-bold text-gray-900">Profile</h1>
               </div>

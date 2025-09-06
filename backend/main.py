@@ -16,6 +16,7 @@ from datetime import datetime, timedelta, timezone
 from challenges import CHALLENGES
 from challenge_container import challenge_manager
 from duckdb_container import duckdb_challenge_manager
+from courses import COURSES, get_course_by_id, get_available_courses, get_course_challenges
 
 app = FastAPI()
 security = HTTPBearer()
@@ -179,6 +180,18 @@ class LeaderboardEntry(BaseModel):
     total_attempts: int
     efficiency_rate: float
     last_solved: str
+
+class Course(BaseModel):
+    id: str
+    name: str
+    description: str
+    icon: str
+    difficulty: str
+    duration: str
+    features: list[str]
+    technologies: list[str]
+    challenge_count: int
+    is_available: bool
 
 # Authentication functions
 def create_access_token(data: dict):
@@ -943,6 +956,107 @@ def get_user_submissions_endpoint(email: str = Depends(verify_token), challenge_
         })
     
     return {"submissions": submissions_data}
+
+@app.get("/courses")
+def get_courses():
+    """Get all courses (no authentication required for browsing)"""
+    courses_data = []
+    for course in COURSES:
+        course_data = {
+            "id": course["id"],
+            "name": course["name"],
+            "description": course["description"],
+            "icon": course["icon"],
+            "difficulty": course["difficulty"],
+            "duration": course["duration"],
+            "features": course["features"],
+            "technologies": course["technologies"],
+            "challenge_count": len(course["challenge_ids"]),
+            "is_available": course["is_available"]
+        }
+        courses_data.append(course_data)
+    
+    return {"courses": courses_data}
+
+@app.get("/courses/{course_id}")
+def get_course_details(course_id: str, email: str = Depends(verify_token)):
+    """Get detailed course information with user progress"""
+    course = get_course_by_id(course_id)
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    
+    user_id = get_user_id(email)
+    if not user_id:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Get course challenges
+    course_challenges = get_course_challenges(course_id)
+    
+    # Get user progress for course challenges
+    progress = get_user_progress(user_id)
+    progress_dict = {p[0]: {"solved_at": p[1], "attempts": p[2]} for p in progress}
+    
+    # Calculate course-specific progress
+    solved_count = sum(1 for c in course_challenges if c["id"] in progress_dict and progress_dict[c["id"]]["solved_at"])
+    total_count = len(course_challenges)
+    
+    course_data = {
+        "id": course["id"],
+        "name": course["name"],
+        "description": course["description"],
+        "icon": course["icon"],
+        "difficulty": course["difficulty"],
+        "duration": course["duration"],
+        "features": course["features"],
+        "technologies": course["technologies"],
+        "is_available": course["is_available"],
+        "progress": {
+            "solved": solved_count,
+            "total": total_count,
+            "percentage": round((solved_count / total_count * 100) if total_count > 0 else 0, 1)
+        }
+    }
+    
+    return course_data
+
+@app.get("/courses/{course_id}/challenges")
+def get_course_challenges_endpoint(course_id: str, email: str = Depends(verify_token)):
+    """Get all challenges for a specific course with user progress"""
+    course = get_course_by_id(course_id)
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    
+    user_id = get_user_id(email)
+    if not user_id:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Get course challenges
+    course_challenges = get_course_challenges(course_id)
+    
+    # Get user progress
+    progress = get_user_progress(user_id)
+    progress_dict = {p[0]: {"solved_at": p[1], "attempts": p[2]} for p in progress}
+    
+    # Return challenges with progress info
+    challenges_with_progress = []
+    for c in course_challenges:
+        challenge_data = {
+            "id": c["id"], 
+            "name": c["name"], 
+            "level": c["level"]
+        }
+        
+        if c["id"] in progress_dict:
+            challenge_data["solved"] = progress_dict[c["id"]]["solved_at"] is not None
+            challenge_data["solved_at"] = progress_dict[c["id"]]["solved_at"]
+            challenge_data["attempts"] = progress_dict[c["id"]]["attempts"]
+        else:
+            challenge_data["solved"] = False
+            challenge_data["attempts"] = 0
+        
+        challenges_with_progress.append(challenge_data)
+    
+    return {"challenges": challenges_with_progress}
 
 @app.get("/challenges")
 def get_challenges(email: str = Depends(verify_token)):

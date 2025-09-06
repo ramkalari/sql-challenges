@@ -72,8 +72,8 @@ export default function LeaderboardPage() {
     router.push("/landing");
   };
 
-  const handleBackToChallenges = () => {
-    router.push("/challenges");
+  const handleBackToHome = () => {
+    router.push("/");
   };
 
   const getRankColor = (rank: number) => {
@@ -119,7 +119,7 @@ export default function LeaderboardPage() {
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-600">Welcome, {userEmail}</span>
               <button
-                onClick={handleBackToChallenges}
+                                  onClick={handleBackToHome}
                 className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
               >
                 Challenges

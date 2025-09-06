@@ -43,8 +43,16 @@ export default function LandingPage() {
       localStorage.setItem("token", data.access_token);
       localStorage.setItem("userEmail", data.email);
       
-      // Redirect to challenges
-      router.push("/challenges");
+      // Check for redirect parameter
+      const urlParams = new URLSearchParams(window.location.search);
+      const redirectTo = urlParams.get("redirect");
+      
+      if (redirectTo) {
+        router.push(redirectTo);
+      } else {
+        // Default redirect to home page (courses)
+        router.push("/");
+      }
     } catch (err: unknown) {
       const error = err as ApiError;
       setError(error.response?.data?.detail || "An error occurred");
