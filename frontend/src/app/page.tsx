@@ -194,7 +194,7 @@ export default function Home() {
                 
                 {/* Features */}
                 <div className="mb-4">
-                  <h4 className="text-sm font-semibold text-gray-900 mb-2">What you'll learn:</h4>
+                  <h4 className="text-sm font-semibold text-gray-900 mb-2">What you&apos;ll learn:</h4>
                   <ul className="text-sm text-gray-600 space-y-1">
                     {course.features.slice(0, 3).map((feature, index) => (
                       <li key={index} className="flex items-center">

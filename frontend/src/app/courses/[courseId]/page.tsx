@@ -98,14 +98,14 @@ export default function CoursePage() {
         
         setCourse(courseRes.data);
         setChallenges(challengesRes.data.challenges);
-      } catch (err: unknown) {
-        const error = err as ApiError;
-        if (error.response?.status === 401) {
+      } catch (error: unknown) {
+        const apiError = error as ApiError;
+        if (apiError.response?.status === 401) {
           // Token expired or invalid
           localStorage.removeItem("token");
           localStorage.removeItem("userEmail");
           router.push("/landing");
-        } else if (error.response?.status === 404) {
+        } else if (apiError.response?.status === 404) {
           setError("Course not found.");
         } else {
           setError("Failed to load course data.");
@@ -137,7 +137,7 @@ export default function CoursePage() {
       setChallenges(prev => prev.map(c => 
         c.id === id ? { ...c, solved: res.data.solved, attempts: res.data.attempts } : c
       ));
-    } catch (err: unknown) {
+    } catch {
       setError("Failed to load challenge details.");
     }
   };
@@ -299,7 +299,7 @@ export default function CoursePage() {
                       <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getLevelColor(challenge.level)}`}>
                         {challenge.level}
                       </span>
-                      {challenge.attempts > 0 && (
+                      {(challenge.attempts ?? 0) > 0 && (
                         <span className="text-xs text-gray-500">
                           {challenge.attempts} attempt{challenge.attempts !== 1 ? 's' : ''}
                         </span>
@@ -426,7 +426,7 @@ export default function CoursePage() {
                       ) : (
                         <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                           <h3 className="text-lg font-semibold text-yellow-900 mb-2">❌ Not quite right</h3>
-                          <p className="text-yellow-800">Your query ran successfully, but the results don't match what's expected. Try again!</p>
+                          <p className="text-yellow-800">Your query ran successfully, but the results don&apos;t match what&apos;s expected. Try again!</p>
                         </div>
                       )}
 
