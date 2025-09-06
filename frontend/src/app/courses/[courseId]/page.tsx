@@ -72,7 +72,7 @@ export default function CoursePage() {
   const [course, setCourse] = useState<Course | null>(null);
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [selectedChallenge, setSelectedChallenge] = useState<Challenge | null>(null);
-  const [query, setQuery] = useState("SELECT * FROM ...");
+  const [query, setQuery] = useState("");
   const [result, setResult] = useState<QueryResult | null>(null);
   const [error, setError] = useState("");
   const [userEmail, setUserEmail] = useState("");
@@ -140,6 +140,15 @@ export default function CoursePage() {
       setSelectedChallenge(res.data);
       setResult(null);
       setError("");
+      
+      // Set appropriate default query based on challenge type
+      if (id >= 101 && id <= 200) {
+        // Chemistry challenges - start with empty input
+        setQuery("");
+      } else {
+        // SQL challenges - start with template
+        setQuery("SELECT * FROM ...");
+      }
       
       // Update the local challenges state to reflect any progress changes
       setChallenges(prev => prev.map(c => 
