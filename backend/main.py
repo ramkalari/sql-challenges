@@ -960,10 +960,9 @@ def get_user_submissions_endpoint(email: str = Depends(verify_token), challenge_
 
 @app.get("/courses")
 def get_courses():
-    """Get all courses (no authentication required for browsing)"""
-    courses_data = []
-    for course in COURSES:
-        course_data = {
+    """Get all published courses (no authentication required for browsing)"""
+    courses_data = [
+        {
             "id": course["id"],
             "name": course["name"],
             "description": course["description"],
@@ -973,10 +972,10 @@ def get_courses():
             "features": course["features"],
             "technologies": course["technologies"],
             "challenge_count": len(course["challenge_ids"]),
-            "is_available": course["is_available"]
+            "is_available": course["is_available"],
         }
-        courses_data.append(course_data)
-    
+        for course in get_available_courses()
+    ]
     return {"courses": courses_data}
 
 @app.get("/courses/{course_id}")

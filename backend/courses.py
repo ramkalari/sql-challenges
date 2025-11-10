@@ -36,7 +36,7 @@ COURSES = [
         ],
         "technologies": ["Chemistry", "Atomic Theory", "Chemical Bonding"],
         "challenge_ids": [c["id"] for c in ATOMIC_STRUCTURE_CHALLENGES],
-        "is_available": True
+        "is_available": False
     },
     {
         "id": "python",
